@@ -37,6 +37,35 @@ npm run build    # electron-vite build
 npm run dist     # build + electron-builder (AppImage/deb)
 ```
 
+## Запуск и sandbox
+
+Если приложение падает с ошибкой `GPU process launch failed` или `Network service crashed`, запускай с флагом `--no-sandbox`:
+
+```bash
+./dist/jazz-note-linux-x86_64.AppImage --no-sandbox
+./dist/linux-unpacked/jazz-note --no-sandbox
+```
+
+Это связано с тем, что `chrome-sandbox` не имеет suid-бита после сборки (electron-builder не сохраняет suid в пакетах). Для production-использования можно установить suid вручную:
+
+```bash
+sudo chown root dist/linux-unpacked/chrome-sandbox
+sudo chmod 4755 dist/linux-unpacked/chrome-sandbox
+```
+
+## Release
+
+When preparing a release, build packages for all target platforms right away, not just the default:
+- Arch Linux — `pacman` (electron-builder `linux.target: pacman`)
+- Debian / Ubuntu — `deb`
+- Windows — `nsis`
+
+`npm run dist` builds the current platform only. To build all in one go (from Linux, requires `wine`):
+
+```bash
+npm run dist:all
+```
+
 ## Conventions
 
 - Don't add code comments unless asked.
