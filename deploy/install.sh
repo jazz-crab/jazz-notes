@@ -14,10 +14,18 @@ SERVICE_NAME="jazz-note-server"
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 
 need_sudo() {
-  if ! sudo -n true 2>/dev/null; then
+  if [ -z "${SUDO_PASS:-}" ] && ! sudo -n true 2>/dev/null; then
     echo "Sudo password is required to install Node and the systemd service." >&2
-    echo "Re-run from a terminal that can prompt for sudo." >&2
+    echo "Re-run from a terminal that can prompt for sudo, or set SUDO_PASS." >&2
     exit 1
+  fi
+}
+
+SUDO() {
+  if [ -n "${SUDO_PASS:-}" ]; then
+    echo "$SUDO_PASS" | sudo -S "$@"
+  else
+    sudo "$@"
   fi
 }
 
@@ -25,11 +33,13 @@ need_sudo() {
 if ! command -v node >/dev/null 2>&1; then
   echo "Node.js not found — installing via apt..."
   need_sudo
-  sudo apt-get update
-  sudo apt-get install -y nodejs
+  SUDO apt-get update
+  SUDO apt-get install -y nodejs
 fi
 NODE_VERSION="$(node --version)"
 echo "Node.js $NODE_VERSION"
+NODE_BIN="$(command -v node)"
+echo "Node path: $NODE_BIN"
 
 # 2. Vault
 mkdir -p "$VAULT"
@@ -57,9 +67,12 @@ sed -e "s|__USER__|$RUN_USER|g" \
     -e "s|__GROUP__|$RUN_GROUP|g" \
     -e "s|__SERVER_DIR__|$SERVER_DIR|g" \
     -e "s|__ENV_FILE__|$ENV_FILE|g" \
-    "$SERVER_DIR/jazz-note-server.service" | sudo tee "$SERVICE_FILE" >/dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable --now "$SERVICE_NAME"
+    -e "s|__NODE_BIN__|$NODE_BIN|g" \
+    "$SERVER_DIR/jazz-note-server.service" > "$SERVER_DIR/.service.tmp"
+SUDO install -m 644 "$SERVER_DIR/.service.tmp" "$SERVICE_FILE"
+rm -f "$SERVER_DIR/.service.tmp"
+SUDO systemctl daemon-reload
+SUDO systemctl enable --now "$SERVICE_NAME"
 
 echo
 echo "JazzNote server installed and running:"

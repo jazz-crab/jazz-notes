@@ -28,7 +28,8 @@ cd jazz-note-server-<version>
    `JAZZ_NOTE_TOKEN` (keep it secret — it guards `POST /api/note`);
 4. installs and starts a `jazz-note-server` systemd service.
 
-It needs `sudo` to install Node and register the service.
+It needs `sudo` to install Node and register the service. If `sudo` prompts for a
+password, run with `SUDO_PASS=<password> ./install.sh` (e.g. over SSH).
 
 ## Manual run
 
