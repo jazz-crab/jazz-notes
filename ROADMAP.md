@@ -26,6 +26,7 @@ Legend: `[x] done · [ ] next · [~] deferred`
 
 ### Engineering
 - [x] **Tests + CI** — unit tests for the frontmatter parser, i18n, color, debounce, and fonts utilities (Vitest); a GitHub Actions workflow runs tests and the build on every push/PR.
+- [x] **Packaging + beta releases** — Linux (AppImage/deb/pacman) + Windows (NSIS); GitHub Actions builds and publishes releases with ready-to-download binaries on every `v*` tag.
 
 ### Sync & versioning
 - [x] **Git-backed vault** — the notes folder is initialized as a git repository; every autosave (400 ms debounce) and settings change become commits.
@@ -37,6 +38,10 @@ Legend: `[x] done · [ ] next · [~] deferred`
 - [x] **Conflict resolution** — pick local or remote version per conflicting file with preview.
 - [x] **Multi-device onboarding** — share the server URL, login and token as a QR code or a copyable string; import by scanning or pasting on another device.
 
+### Web version
+- [x] **Web version** — the same UI runs in the browser (`web/`): a small Node.js server reuses the app's git and save logic against the same vault.
+- [x] **HTTP note intake** — `POST /api/note` creates notes from JSON guarded by a token (`X-Auth-Token` / `JAZZ_NOTE_TOKEN`); handy from a phone or curl.
+
 ## Later
 
 - [ ] **PDF export** — render a note (or a set of notes) to PDF.
@@ -44,7 +49,7 @@ Legend: `[x] done · [ ] next · [~] deferred`
 
 ## Deferred (not now)
 
-- App icon and packaging for Windows/macOS
+- App icon
 - Backlinks / wiki-links
 - Tags and priority UI (data model already exists in frontmatter, no UI yet)
 
