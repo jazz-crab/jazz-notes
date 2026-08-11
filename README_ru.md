@@ -141,6 +141,26 @@ curl -H 'X-Auth-Token: ваш-токен' -H 'Content-Type: application/json' \
 
 Можно передать и массив объектов. Допустимые поля: `title`, `text`, `folder`, `due`, `color`, `priority`, `tags`. Заметки проходят через тот же saver, что и приложение: ID назначаются автоматически, frontmatter генерируется, автосохранение коммитится.
 
+### Развёртывание на сервере
+
+Каждый релиз включает самодостаточный серверный бандл — `jazz-note-server-<версия>.tar.gz` (на странице [Releases](https://github.com/jazz-crab/jazz-note/releases)). Для него нужен **только Node.js**; все остальные зависимости вкомпилированы в `server.js`. В бандле: `server.js`, статический клиент (`dist/`) и `install.sh`, который ставит всё на хосте с systemd:
+
+```bash
+tar -xzf jazz-note-server-<версия>.tar.gz
+cd jazz-note-server-<версия>
+./install.sh
+```
+
+`install.sh` ставит Node.js через apt (если нет), создаёт хранилище (`~/jazz-notes`), пишет env-файл со сгенерированным `JAZZ_NOTE_TOKEN` и регистрирует systemd-сервис `jazz-note-server`. Повторный запуск — это обновление: существующие хранилище и env-файл сохраняются.
+
+Ручной запуск (любой хост с Node.js):
+
+```bash
+export JAZZ_VAULT=~/jazz-notes
+export JAZZ_NOTE_TOKEN=<секрет>
+node server.js   # слушает PORT (по умолчанию 3180)
+```
+
 ## Roadmap
 
 Текущий план разработки — в [ROADMAP.md](ROADMAP_ru.md).

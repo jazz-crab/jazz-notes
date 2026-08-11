@@ -51,3 +51,32 @@ jobs:
           name: ${{ github.ref_name }}
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: dist/jazz-note-win-*.exe
+
+  release-server:
+    name: Server bundle (tar.gz)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run web:build
+      - name: Assemble server bundle
+        run: |
+          mkdir -p stage
+          cp web/dist-server/server.js stage/server.js
+          cp -r web/dist stage/dist
+          cp deploy/install.sh stage/install.sh
+          cp deploy/jazz-note-server.service stage/jazz-note-server.service
+          cp deploy/README-server.md stage/README-server.md
+          node -e 'const fs=require("fs");fs.writeFileSync("stage/package.json",JSON.stringify({name:"jazz-note-server",version:process.env.GITHUB_REF_NAME,main:"server.js",scripts:{start:"node server.js"}},null,2)+"\n")'
+          chmod +x stage/install.sh
+          tar -czf "jazz-note-server-${GITHUB_REF_NAME}.tar.gz" -C stage .
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: jazz-note-server-*.tar.gz

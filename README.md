@@ -141,6 +141,26 @@ curl -H 'X-Auth-Token: your-token' -H 'Content-Type: application/json' \
 
 An array of note objects is accepted too. Allowed fields: `title`, `text`, `folder`, `due`, `color`, `priority`, `tags`. Notes go through the same saver as the app: IDs are auto-assigned, frontmatter is generated, autosave commits are scheduled.
 
+### Server deployment
+
+Every release ships a self-contained server bundle — `jazz-note-server-<version>.tar.gz` (available on the [Releases](https://github.com/jazz-crab/jazz-note/releases) page). It needs **only Node.js**; all other dependencies are compiled into `server.js`. The bundle contains `server.js`, the static client (`dist/`), and an `install.sh` that sets everything up on a systemd host:
+
+```bash
+tar -xzf jazz-note-server-<version>.tar.gz
+cd jazz-note-server-<version>
+./install.sh
+```
+
+`install.sh` installs Node.js via apt if missing, creates the vault (`~/jazz-notes`), writes an env file with a generated `JAZZ_NOTE_TOKEN`, and registers a `jazz-note-server` systemd service. Running it again upgrades the bundle while reusing the existing vault and env file.
+
+Manual run (any host with Node.js):
+
+```bash
+export JAZZ_VAULT=~/jazz-notes
+export JAZZ_NOTE_TOKEN=<secret>
+node server.js   # listens on PORT (default 3180)
+```
+
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the current development plan.
