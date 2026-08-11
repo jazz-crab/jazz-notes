@@ -109,6 +109,38 @@ Supported frontmatter keys: `title`, `id`, `priority` (0–4), `due`, `color`, `
 
 App preferences (palette, theme, language, font, notes vault path) are persisted in `localStorage` under `jazz-settings`.
 
+## Web (browser) version
+
+The same renderer UI runs in the browser against the same vault, served by a small Node.js server (`web/`) that reuses the app's git and save logic.
+
+Build and run locally:
+
+```bash
+npm run web:build   # builds the client (web/dist) and the server bundle (web/dist-server/server.js)
+npm run web:dev     # vite dev server for the browser UI
+npm run web:preview # preview of the built client
+```
+
+The server (run with `node web/dist-server/server.js`) exposes the vault via the same `jazz` API the desktop app uses. Env vars:
+
+| Var | Default | Meaning |
+|-----|---------|---------|
+| `JAZZ_VAULT` | `~/jazz-notes` | Path to the notes vault |
+| `PORT` | `3180` | HTTP port |
+| `JAZZ_WEB_ROOT` | `web/dist` | Static client root |
+
+### Receiving notes over HTTP
+
+`POST /api/note` creates one or more notes from plain JSON — useful for phone/curl/automation. Requires the `X-Auth-Token` header (env `JAZZ_NOTE_TOKEN`); if the token is not set, the endpoint is disabled.
+
+```bash
+curl -H 'X-Auth-Token: your-token' -H 'Content-Type: application/json' \
+  -d '{"title":"Quick note","text":"body","folder":"inbox","due":"2026-08-15","color":"red","priority":2,"tags":["work"]}' \
+  https://notes.example.com/api/note
+```
+
+An array of note objects is accepted too. Allowed fields: `title`, `text`, `folder`, `due`, `color`, `priority`, `tags`. Notes go through the same saver as the app: IDs are auto-assigned, frontmatter is generated, autosave commits are scheduled.
+
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the current development plan.

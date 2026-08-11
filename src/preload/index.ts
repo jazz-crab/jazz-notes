@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { SyncResult, GitCommitInfo, GitAuth } from '../shared/types'
+import type { NoteDraft, SavedNoteInfo } from '../shared/note'
 
 const api = {
   getPath: (): Promise<string> => ipcRenderer.invoke('notes:getPath'),
@@ -21,6 +22,10 @@ const api = {
     ipcRenderer.invoke('notes:rename', relPath, newRelPath, dirPath),
   selectDirectory: (): Promise<string | null> =>
     ipcRenderer.invoke('dialog:selectDirectory'),
+  createNoteDraft: (draft: NoteDraft, dirPath?: string): Promise<SavedNoteInfo> =>
+    ipcRenderer.invoke('notes:createNoteDraft', draft, dirPath),
+  updateNoteDraft: (relPath: string, draft: NoteDraft, dirPath?: string): Promise<SavedNoteInfo> =>
+    ipcRenderer.invoke('notes:updateNoteDraft', relPath, draft, dirPath),
   readHistory: (): Promise<Record<string, unknown>> =>
     ipcRenderer.invoke('history:read'),
   writeHistory: (data: unknown): Promise<boolean> =>

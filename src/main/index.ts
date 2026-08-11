@@ -15,6 +15,7 @@ import {
   type GitCommitInfo,
   type GitAuth,
 } from './git'
+import { saveNotes, updateNote } from './save'
 
 let mainWindow: BrowserWindow | null = null
 let watcher: ReturnType<typeof watch> | null = null
@@ -193,6 +194,18 @@ function registerIpc() {
     })
     if (result.canceled) return null
     return result.filePaths[0]
+  })
+
+  ipcMain.handle('notes:createNoteDraft', async (_event, draft, dirPath?: string) => {
+    const notesPath = dirPath || getDefaultNotesPath()
+    const result = await saveNotes([draft], notesPath, () => scheduleCommit(notesPath))
+    return result.saved[0]
+  })
+
+  ipcMain.handle('notes:updateNoteDraft', async (_event, relPath: string, draft, dirPath?: string) => {
+    const notesPath = dirPath || getDefaultNotesPath()
+    const result = await updateNote(relPath, draft, notesPath, () => scheduleCommit(notesPath))
+    return result.saved[0]
   })
 
   ipcMain.handle('git:ensure', async (_event, repoDir: string, remoteUrl: string) => {

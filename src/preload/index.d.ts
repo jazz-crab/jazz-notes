@@ -1,4 +1,5 @@
 import type { SyncResult, GitCommitInfo, GitAuth } from '../shared/types'
+import type { NoteDraft, SavedNoteInfo } from '../shared/note'
 
 export interface JazzAPI {
   getPath: () => Promise<string>
@@ -11,6 +12,8 @@ export interface JazzAPI {
   deleteDir: (relPath: string, dirPath?: string) => Promise<boolean>
   rename: (relPath: string, newRelPath: string, dirPath?: string) => Promise<boolean>
   selectDirectory: () => Promise<string | null>
+  createNoteDraft: (draft: NoteDraft, dirPath?: string) => Promise<SavedNoteInfo>
+  updateNoteDraft: (relPath: string, draft: NoteDraft, dirPath?: string) => Promise<SavedNoteInfo>
   readHistory: () => Promise<Record<string, unknown>>
   writeHistory: (data: unknown) => Promise<boolean>
   gitEnsure: (repoDir: string, remoteUrl: string) => Promise<boolean>

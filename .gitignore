@@ -7,3 +7,7 @@ dist/
 
 # personal notes vault (if a custom notes dir is ever pointed into the repo)
 jazz-notes/
+
+# web build output
+web/dist/
+web/dist-server/

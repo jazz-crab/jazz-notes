@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { NoteMeta } from '../utils/frontmatter'
+import type { NoteMeta, NoteDraft } from '../utils/frontmatter'
 import { parseNote, serializeNote } from '../utils/frontmatter'
 import { useSettingsStore } from './settings'
 import { debounce } from '../utils/debounce'
@@ -90,7 +90,8 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   setNotesPath: (path: string) => set({ notesPath: path }),
 
   loadNotes: async () => {
-    set({ loading: true })
+    const hasNotes = get().notes.length > 0
+    if (!hasNotes) set({ loading: true })
     const saved = useSettingsStore.getState().notesPath
     const path = saved || await window.jazz.getPath()
     if (!saved) useSettingsStore.getState().setNotesPath(path)
@@ -171,17 +172,23 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   saveCurrentNote: async () => {
     const { currentNote, notesPath } = get()
     if (!currentNote) return true
-    const meta = { ...currentNote.meta }
-    const raw = serializeNote(meta, currentNote.body)
+    const draft: NoteDraft = {
+      title: currentNote.meta.title,
+      text: currentNote.body,
+      due: currentNote.meta.due,
+      color: currentNote.meta.color,
+      priority: currentNote.meta.priority,
+      tags: currentNote.meta.tags,
+    }
     try {
-      await window.jazz.writeFile(currentNote.relPath, raw, notesPath)
+      await window.jazz.updateNoteDraft(currentNote.relPath, draft, notesPath)
     } catch {
       return false
     }
     const dirty = new Set(get().dirtyNotes)
     dirty.delete(currentNote.relPath)
     set({
-      currentNote: { ...currentNote, content: raw },
+      currentNote: { ...currentNote },
       dirtyNotes: dirty,
     })
     return true
@@ -189,40 +196,32 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   createNote: async (title: string, onCreated?: (relPath: string) => void) => {
     const { notesPath, notes, sidebarSelection } = get()
-    const now = new Date().toISOString()
-    const id = computeAndStoreNextId(notes)
     const folder = sidebarSelection.type === 'folder' ? sidebarSelection.path : ''
-    const filename = folder ? `${folder}/${id}.md` : `${id}.md`
-    const finalTitle = title.trim() || `#${id}`
-    const meta: NoteMeta = {
-      id,
-      title: finalTitle,
-      created: now,
-      updated: now,
-    }
-    const raw = serializeNote(meta, '')
-    ignoreWatcher.add(filename)
-    setTimeout(() => ignoreWatcher.delete(filename), 3000)
+    const finalTitle = title.trim() || `#${computeAndStoreNextId(notes)}`
+    const draft: NoteDraft = { title: finalTitle, text: '', folder }
     try {
-      await window.jazz.createFile(filename, raw, notesPath)
+      const info = await window.jazz.createNoteDraft(draft, notesPath)
+      const now = new Date().toISOString()
+      const meta: NoteMeta = { id: info.id, title: info.title, created: now, updated: now }
+      ignoreWatcher.add(info.relPath)
+      setTimeout(() => ignoreWatcher.delete(info.relPath), 3000)
+      onCreated?.(info.relPath)
+      set({
+        notes: [
+          ...notes,
+          {
+            relPath: info.relPath,
+            title: info.title,
+            meta,
+            content: '',
+            body: '',
+          },
+        ],
+      })
+      return info.relPath
     } catch (e) {
-      ignoreWatcher.delete(filename)
       throw e
     }
-    onCreated?.(filename)
-    set({
-      notes: [
-        ...notes,
-        {
-          relPath: filename,
-          title: finalTitle,
-          meta,
-          content: raw,
-          body: '',
-        },
-      ],
-    })
-    return filename
   },
 
   handleExternalChange: (relPath: string) => {
@@ -236,9 +235,16 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const note = notes.find((n) => n.relPath === relPath)
     const finalTitle = title.trim()
     if (!note || !finalTitle || finalTitle === note.title) return
-    const meta = { ...note.meta, title: finalTitle }
     const body = replaceFirstHeading(note.body, finalTitle)
-    await window.jazz.writeFile(relPath, serializeNote(meta, body), notesPath)
+    const draft: NoteDraft = {
+      title: finalTitle,
+      text: body,
+      due: note.meta.due,
+      color: note.meta.color,
+      priority: note.meta.priority,
+      tags: note.meta.tags,
+    }
+    await window.jazz.updateNoteDraft(relPath, draft, notesPath)
     await get().loadNotes()
   },
 
@@ -247,7 +253,15 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const note = notes.find((n) => n.relPath === relPath)
     if (!note) return
     const meta = { ...note.meta, ...patch }
-    await window.jazz.writeFile(relPath, serializeNote(meta, note.body), notesPath)
+    const draft: NoteDraft = {
+      title: meta.title,
+      text: note.body,
+      due: meta.due,
+      color: meta.color,
+      priority: meta.priority,
+      tags: meta.tags,
+    }
+    await window.jazz.updateNoteDraft(relPath, draft, notesPath)
     await get().loadNotes()
   },
 
