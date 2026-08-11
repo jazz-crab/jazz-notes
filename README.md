@@ -39,7 +39,7 @@ Inspired by [Obsidian](https://obsidian.md): a plain-Markdown vault with inline 
 - **Git-backed vault** — the notes folder is a git repository; every autosave becomes a commit, so nothing is lost
 - **No system git required** — all git operations are handled in-process by a pure-JS engine (isomorphic-git), so the app works on any machine without installing anything
 - **Per-note version history** — a history button in the editor lists past versions; preview any version and restore it (restores are new commits, nothing is rewritten)
-- **Server sync over git smart HTTP** — the vault pushes/pulls to a bare git repo served over HTTPS (URL, login and token editable in Settings). Non-conflicting changes merge automatically
+- **Sync engine** — push/pull/merge against a git remote (URL, login and token editable in Settings). Non-conflicting changes merge automatically. You point it at a remote you host yourself (e.g. a GitHub repo); JazzNote does not host a vault server yet — see [ROADMAP](ROADMAP.md) (issue #8)
 - **Multi-device onboarding** — share the server URL, login and token as a **QR code** or a copyable string; on another device scan the QR or paste the string to connect
 - **Sync indicator** — a dot in the top-right corner: green = synced, yellow = server unavailable, red = error, orange = conflicts; click for details, a manual sync button and conflict resolution
 - **Conflict resolution** — when the same file was changed on both sides, pick local or server version per file (with a preview) and apply
