@@ -87,6 +87,14 @@ Beta releases are published automatically from a `v*` tag — see `.github/workf
 - Documentation (`README`, `ROADMAP`, guides) is maintained in both **English and Russian**, kept in sync.
 - When only one language fits (titles, code comments, etc.), use **English**.
 
+## Automation (console-first)
+
+Every feature of the app must be reachable from the console — no function may live only behind the GUI. This keeps the app automatable (cron, SSH, scripts) and makes the desktop UI, the web server, and the CLI thin adapters over the same shared core (`src/main/save.ts`, `src/main/git.ts`, `src/shared/note.ts`).
+
+- Prefer adding operations to the shared core and exposing them through all adapters (IPC + HTTP + CLI) instead of writing UI-only code paths.
+- When you add a UI feature, expose the same operation via the CLI/API in the same change.
+- Notes/git/save logic belongs in `src/shared/` or `src/main/`, never inside React components.
+
 ## Conventions
 
 - Don't add code comments unless asked.
