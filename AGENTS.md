@@ -35,7 +35,8 @@ JazzNote — a local-first Markdown note-taking app ("Second Brain") with Obsidi
 npm install
 npm run dev      # electron-vite dev
 npm run build    # electron-vite build
-npm run dist     # build + electron-builder (AppImage/deb)
+npm run dist     # build + electron-builder (current platform: AppImage/deb/pacman or nsis)
+npm run dist:all # build linux (AppImage/deb/pacman) + windows (nsis) from Linux (requires wine)
 npm run test     # vitest
 npm run web:build    # web client (web/dist) + server bundle (web/dist-server/server.js)
 npm run web:dev      # vite dev server for the browser UI
@@ -48,6 +49,37 @@ npm run web:preview  # preview of the built web client
 - The saver (`src/main/save.ts`: `saveNotes`, `updateNote`, `writeRaw`) is shared by the desktop main process (`src/main/index.ts`) and the web server (`web/server.ts`). Do not add a second serialization path.
 - `POST /api/note` (`web/note-receiver.ts`) accepts raw note drafts `{title, text, folder, due, color, priority, tags}` and is guarded by `X-Auth-Token` / `JAZZ_NOTE_TOKEN`.
 - When changing the note format or the saver, update the tests in `src/renderer/src/utils/frontmatter.test.ts` (they exercise the shared `src/shared/note.ts` parser/serializer) and re-run `npm run test`.
+
+## Запуск и sandbox
+
+Если приложение падает с ошибкой `GPU process launch failed` или `Network service crashed`, запускай с флагом `--no-sandbox`:
+
+```bash
+./dist/jazz-note-linux-x86_64.AppImage --no-sandbox
+./dist/linux-unpacked/jazz-note --no-sandbox
+```
+
+Это связано с тем, что `chrome-sandbox` не имеет suid-бита после сборки (electron-builder не сохраняет suid в пакетах). Для production-использования можно установить suid вручную:
+
+```bash
+sudo chown root dist/linux-unpacked/chrome-sandbox
+sudo chmod 4755 dist/linux-unpacked/chrome-sandbox
+```
+
+## Release
+
+When preparing a release, build packages for all target platforms right away, not just the default:
+- Arch Linux — `pacman` (electron-builder `linux.target: pacman`)
+- Debian / Ubuntu — `deb`
+- Windows — `nsis`
+
+`npm run dist` builds the current platform only. To build all in one go (from Linux, requires `wine`):
+
+```bash
+npm run dist:all
+```
+
+Beta releases are published automatically from a `v*` tag — see `.github/workflows/release.yml`.
 
 ## Conventions
 

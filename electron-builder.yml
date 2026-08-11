@@ -1,5 +1,6 @@
 appId: com.jazzcrab.jazznote
 productName: JazzNote
+asar: false
 directories:
   buildResources: resources
 files:
@@ -8,8 +9,17 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+extraResources:
+  - from: node_modules/call-bind-apply-helpers
+    to: app/node_modules/call-bind-apply-helpers
 linux:
+  category: Utility
   target:
     - AppImage
     - deb
-  category: Utility
+    - pacman
+  artifactName: jazz-note-${os}-${arch}.${ext}
+win:
+  target:
+    - nsis
+  artifactName: jazz-note-${os}-${arch}.${ext}
