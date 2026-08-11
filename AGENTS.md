@@ -81,6 +81,12 @@ npm run dist:all
 
 Beta releases are published automatically from a `v*` tag — see `.github/workflows/release.yml`.
 
+## Language
+
+- GitHub-facing content — issues, PRs, commit messages, release notes — is written in **English** (the default language).
+- Documentation (`README`, `ROADMAP`, guides) is maintained in both **English and Russian**, kept in sync.
+- When only one language fits (titles, code comments, etc.), use **English**.
+
 ## Conventions
 
 - Don't add code comments unless asked.
