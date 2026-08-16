@@ -55,8 +55,8 @@ npm run web:preview  # preview of the built web client
 Если приложение падает с ошибкой `GPU process launch failed` или `Network service crashed`, запускай с флагом `--no-sandbox`:
 
 ```bash
-./dist/jazz-note-linux-x86_64.AppImage --no-sandbox
-./dist/linux-unpacked/jazz-note --no-sandbox
+./dist/jazz-notes-linux-x86_64.AppImage --no-sandbox
+./dist/linux-unpacked/jazz-notes --no-sandbox
 ```
 
 Это связано с тем, что `chrome-sandbox` не имеет suid-бита после сборки (electron-builder не сохраняет suid в пакетах). Для production-использования можно установить suid вручную:

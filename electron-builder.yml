@@ -18,8 +18,8 @@ linux:
     - AppImage
     - deb
     - pacman
-  artifactName: jazz-note-${os}-${arch}.${ext}
+  artifactName: jazz-notes-${os}-${arch}.${ext}
 win:
   target:
     - nsis
-  artifactName: jazz-note-${os}-${arch}.${ext}
+  artifactName: jazz-notes-${os}-${arch}.${ext}

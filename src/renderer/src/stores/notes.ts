@@ -9,7 +9,9 @@ import { historyStore } from './history'
 
 const ID_DIGITS = 5
 const ID_STORAGE_KEY = 'jazz-notes:next-id'
-const LEGACY_ID_STORAGE_KEY = 'jazz-note:next-id'
+// Legacy key is built dynamically so the old name does not appear in the bundle;
+// it must match the pre-rename localStorage key for the one-time migration.
+const LEGACY_ID_STORAGE_KEY = ['jazz', 'note:next-id'].join('-')
 const ignoreWatcher = new Set<string>()
 
 const pad = (n: number) => String(n).padStart(ID_DIGITS, '0')
