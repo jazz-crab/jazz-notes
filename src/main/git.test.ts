@@ -18,14 +18,14 @@ import {
 let dir: string
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'jazz-note-test-'))
+  dir = await mkdtemp(join(tmpdir(), 'jazz-notes-test-'))
 })
 
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true })
 })
 
-const AUTHOR = { name: 'jazz-note', email: 'jazz-note@local' }
+const AUTHOR = { name: 'jazz-notes', email: 'jazz-notes@local' }
 
 describe('isOfflineError', () => {
   it('detects network/offline failures', () => {
@@ -120,7 +120,7 @@ describe('sync', () => {
   })
 
   it('reports offline when the server is unreachable', async () => {
-    await ensureRepo(dir, 'https://127.0.0.1:1/git/jazz-notes.git')
+    await ensureRepo(dir, 'https://127.0.0.1:1/git/jazz-notes-vault.git')
     fs.writeFileSync(join(dir, 'a.md'), 'x\n')
     await commitAll(dir)
     const result = await sync(dir)

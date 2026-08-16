@@ -30,14 +30,14 @@ describe('syncConfig', () => {
   })
 
   it('round-trips via the jazznote:// URI', () => {
-    const config = { url: 'https://rentgen.su/git/jazz-notes.git', user: 'vault', token: generateSyncToken() }
+    const config = { url: 'https://rentgen.su/git/jazz-notes-vault.git', user: 'vault', token: generateSyncToken() }
     const encoded = encodeSyncConfig(config)
     expect(encoded.startsWith(`${SYNC_CONFIG_PREFIX}?`)).toBe(true)
     expect(decodeSyncConfig(encoded)).toEqual(config)
   })
 
   it('round-trips via url|user|token fallback', () => {
-    const config = { url: 'https://rentgen.su/git/jazz-notes.git', user: 'vault', token: generateSyncToken() }
+    const config = { url: 'https://rentgen.su/git/jazz-notes-vault.git', user: 'vault', token: generateSyncToken() }
     const raw = `${config.url}|${config.user}|${config.token}`
     expect(decodeSyncConfig(raw)).toEqual(config)
   })

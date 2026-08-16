@@ -9,24 +9,24 @@ all other dependencies are compiled in.
 - `server.js` — the server (Node.js, single file)
 - `dist/` — the static browser client
 - `install.sh` — install helper
-- `jazz-note-server.service` — systemd unit template
+- `jazz-notes-web.service` — systemd unit template
 - `package.json` — stub (`npm start` = `node server.js`)
 
 ## Install (Ubuntu/Debian with systemd)
 
 ```bash
-tar -xzf jazz-note-server-<version>.tar.gz
-cd jazz-note-server-<version>
+tar -xzf jazz-notes-web-<version>.tar.gz
+cd jazz-notes-web-<version>
 ./install.sh
 ```
 
 `install.sh`:
 
 1. installs Node.js via `apt` if it is missing;
-2. creates the vault directory (`~/jazz-notes` by default, `JAZZ_VAULT` to override);
-3. writes an env file at `~/.config/jazz-note-server.env` with a generated
+2. creates the vault directory (`~/jazz-notes-vault` by default, `JAZZ_VAULT` to override);
+3. writes an env file at `~/.config/jazz-notes-web.env` with a generated
    `JAZZ_NOTE_TOKEN` (keep it secret — it guards `POST /api/note`);
-4. installs and starts a `jazz-note-server` systemd service.
+4. installs and starts a `jazz-notes-web` systemd service.
 
 It needs `sudo` to install Node and register the service. If `sudo` prompts for a
 password, run with `SUDO_PASS=<password> ./install.sh` (e.g. over SSH).
@@ -34,7 +34,7 @@ password, run with `SUDO_PASS=<password> ./install.sh` (e.g. over SSH).
 ## Manual run
 
 ```bash
-export JAZZ_VAULT=~/jazz-notes
+export JAZZ_VAULT=~/jazz-notes-vault
 export JAZZ_NOTE_TOKEN=<secret>
 node server.js   # listens on PORT (default 3180)
 ```
@@ -44,7 +44,7 @@ node server.js   # listens on PORT (default 3180)
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `PORT` | `3180` | HTTP port |
-| `JAZZ_VAULT` | `~/jazz-notes` | Vault directory |
+| `JAZZ_VAULT` | `~/jazz-notes-vault` | Vault directory |
 | `JAZZ_WEB_ROOT` | `./dist` | Static client root |
 | `JAZZ_NOTE_TOKEN` | *(empty)* | Token for `POST /api/note`; empty disables the endpoint |
 
@@ -59,7 +59,7 @@ curl -H 'X-Auth-Token: <token>' -H 'Content-Type: application/json' \
 ## Upgrade
 
 ```bash
-tar -xzf jazz-note-server-<new-version>.tar.gz
-cd jazz-note-server-<new-version>
+tar -xzf jazz-notes-web-<new-version>.tar.gz
+cd jazz-notes-web-<new-version>
 ./install.sh          # reuses the existing env file and vault
 ```

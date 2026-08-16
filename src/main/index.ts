@@ -33,7 +33,7 @@ function scheduleCommit(repoDir: string) {
 }
 
 function getDefaultNotesPath(): string {
-  return join(app.getPath('documents'), 'jazz-notes')
+  return join(app.getPath('documents'), 'jazz-notes-vault')
 }
 
 async function ensureNotesDir(notesPath: string) {
@@ -88,7 +88,7 @@ function createWindow() {
 function registerIpc() {
   ipcMain.handle('notes:getPath', () => {
     const p = app.getPath('documents')
-    return join(p, 'jazz-notes')
+    return join(p, 'jazz-notes-vault')
   })
 
   ipcMain.handle('notes:readFile', async (_event, relPath: string, dirPath?: string) => {
@@ -174,7 +174,7 @@ function registerIpc() {
   })
 
   ipcMain.handle('history:read', async () => {
-    const historyPath = join(app.getPath('userData'), 'jazz-note-history.json')
+    const historyPath = join(app.getPath('userData'), 'jazz-notes-history.json')
     try {
       return JSON.parse(await readFile(historyPath, 'utf-8'))
     } catch {
@@ -183,7 +183,7 @@ function registerIpc() {
   })
 
   ipcMain.handle('history:write', async (_event, data: unknown) => {
-    const historyPath = join(app.getPath('userData'), 'jazz-note-history.json')
+    const historyPath = join(app.getPath('userData'), 'jazz-notes-history.json')
     await writeFile(historyPath, JSON.stringify(data), 'utf-8')
     return true
   })

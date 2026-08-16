@@ -16,8 +16,8 @@ import {
 } from '../src/main/git'
 import { saveNotes, updateNote, writeRaw } from '../src/main/save'
 import { handleNotePost } from './note-receiver'
-const VAULT = process.env.JAZZ_VAULT || join(process.env.HOME || '/home/jc', 'jazz-notes')
-const HISTORY_PATH = join(process.env.HOME || '/home/jc', '.jazz-note-web-history.json')
+const VAULT = process.env.JAZZ_VAULT || join(process.env.HOME || '/home/jc', 'jazz-notes-vault')
+const HISTORY_PATH = join(process.env.HOME || '/home/jc', '.jazz-notes-web-history.json')
 const PORT = Number(process.env.PORT || 3180)
 const ROOT =
   process.env.JAZZ_WEB_ROOT ||
@@ -276,6 +276,6 @@ if (require.main === module) {
   ensureRepo(VAULT, '').catch((e) => console.error('init failed', e))
   if (!existsSync(VAULT)) mkdir(VAULT, { recursive: true })
   server.listen(PORT, () => {
-    console.log(`jazz-note-web on :${PORT}, vault=${VAULT}`)
+    console.log(`jazz-notes-web on :${PORT}, vault=${VAULT}`)
   })
 }

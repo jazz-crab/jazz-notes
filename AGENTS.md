@@ -9,7 +9,7 @@ JazzNote — a local-first Markdown note-taking app ("Second Brain") with Obsidi
 - Electron 43 + React 19 + TypeScript (electron-vite)
 - CodeMirror 6 editing via `@atomic-editor/editor`
 - State: zustand; file watching: chokidar
-- Notes are plain `.md` files in a vault (default `~/Documents/jazz-notes`), frontmatter metadata on top
+- Notes are plain `.md` files in a vault (default `~/Documents/jazz-notes-vault`), frontmatter metadata on top
 - The same renderer UI runs in the browser (`web/`) served by a small Node server that reuses the main process git/save logic
 
 ## Start of every session: verify the project

@@ -9,7 +9,7 @@ import type { SyncResult, GitCommitInfo } from '../shared/types'
 export type { SyncResult, GitCommitInfo } from '../shared/types'
 
 const DEFAULT_BRANCH = 'main'
-const AUTHOR = { name: 'jazz-note', email: 'jazz-note@local' }
+const AUTHOR = { name: 'jazz-notes', email: 'jazz-notes@local' }
 const cache: Record<string, unknown> = {}
 
 export interface GitAuth {

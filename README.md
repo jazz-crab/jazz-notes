@@ -19,7 +19,7 @@ Inspired by [Obsidian](https://obsidian.md): a plain-Markdown vault with inline 
 - **Keyboard shortcuts** — `Ctrl/Cmd+S` save, `Ctrl/Cmd+Z` undo, `Shift+Ctrl/Cmd+Z` / `Ctrl/Cmd+Y` redo
 
 ### Notes
-- **Plain Markdown files** in a vault folder (customizable — pick any folder in Settings; defaults to `~/Documents/jazz-notes`, auto-created)
+- **Plain Markdown files** in a vault folder (customizable — pick any folder in Settings; defaults to `~/Documents/jazz-notes-vault`, auto-created)
 - **Full CRUD** — create, edit, delete notes and folders; **nested folders** at any depth
 - **Right-click menu** — on a note: rename, move to a folder, change date/color, delete; on a folder: rename, move (into another folder or to root), delete
 - **New note goes to the selected folder** — when a folder is active in the sidebar, new notes are created inside it; a new folder is created inside the selected one too. The vault root is selectable (named after the storage folder), so you can create notes and folders at the root level as well
@@ -85,7 +85,7 @@ npm run test
 Notes are plain `.md` files in the vault, optionally nested in folders. Each file carries a small frontmatter block:
 
 ```
-~/Documents/jazz-notes/
+~/Documents/jazz-notes-vault/
 ├── 00001.md
 └── subfolder/
     └── 00002.md
@@ -125,7 +125,7 @@ The server (run with `node web/dist-server/server.js`) exposes the vault via the
 
 | Var | Default | Meaning |
 |-----|---------|---------|
-| `JAZZ_VAULT` | `~/jazz-notes` | Path to the notes vault |
+| `JAZZ_VAULT` | `~/jazz-notes-vault` | Path to the notes vault |
 | `PORT` | `3180` | HTTP port |
 | `JAZZ_WEB_ROOT` | `web/dist` | Static client root |
 
@@ -143,20 +143,20 @@ An array of note objects is accepted too. Allowed fields: `title`, `text`, `fold
 
 ### Server deployment
 
-Every release ships a self-contained server bundle — `jazz-note-server-<version>.tar.gz` (available on the [Releases](https://github.com/jazz-crab/jazz-note/releases) page). It needs **only Node.js**; all other dependencies are compiled into `server.js`. The bundle contains `server.js`, the static client (`dist/`), and an `install.sh` that sets everything up on a systemd host:
+Every release ships a self-contained server bundle — `jazz-notes-web-<version>.tar.gz` (available on the [Releases](https://github.com/jazz-crab/jazz-note/releases) page). It needs **only Node.js**; all other dependencies are compiled into `server.js`. The bundle contains `server.js`, the static client (`dist/`), and an `install.sh` that sets everything up on a systemd host:
 
 ```bash
-tar -xzf jazz-note-server-<version>.tar.gz
-cd jazz-note-server-<version>
+tar -xzf jazz-notes-web-<version>.tar.gz
+cd jazz-notes-web-<version>
 ./install.sh
 ```
 
-`install.sh` installs Node.js via apt if missing, creates the vault (`~/jazz-notes`), writes an env file with a generated `JAZZ_NOTE_TOKEN`, and registers a `jazz-note-server` systemd service. Running it again upgrades the bundle while reusing the existing vault and env file.
+`install.sh` installs Node.js via apt if missing, creates the vault (`~/jazz-notes-vault`), writes an env file with a generated `JAZZ_NOTE_TOKEN`, and registers a `jazz-notes-web` systemd service. Running it again upgrades the bundle while reusing the existing vault and env file.
 
 Manual run (any host with Node.js):
 
 ```bash
-export JAZZ_VAULT=~/jazz-notes
+export JAZZ_VAULT=~/jazz-notes-vault
 export JAZZ_NOTE_TOKEN=<secret>
 node server.js   # listens on PORT (default 3180)
 ```

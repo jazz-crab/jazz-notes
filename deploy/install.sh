@@ -7,10 +7,10 @@ set -euo pipefail
 SERVER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_USER="$(id -un)"
 RUN_GROUP="$(id -gn)"
-VAULT="${JAZZ_VAULT:-$HOME/jazz-notes}"
+VAULT="${JAZZ_VAULT:-$HOME/jazz-notes-vault}"
 PORT="${PORT:-3180}"
-ENV_FILE="${ENV_FILE:-$HOME/.config/jazz-note-server.env}"
-SERVICE_NAME="jazz-note-server"
+ENV_FILE="${ENV_FILE:-$HOME/.config/jazz-notes-web.env}"
+SERVICE_NAME="jazz-notes-web"
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 
 need_sudo() {
@@ -68,7 +68,7 @@ sed -e "s|__USER__|$RUN_USER|g" \
     -e "s|__SERVER_DIR__|$SERVER_DIR|g" \
     -e "s|__ENV_FILE__|$ENV_FILE|g" \
     -e "s|__NODE_BIN__|$NODE_BIN|g" \
-    "$SERVER_DIR/jazz-note-server.service" > "$SERVER_DIR/.service.tmp"
+    "$SERVER_DIR/jazz-notes-web.service" > "$SERVER_DIR/.service.tmp"
 SUDO install -m 644 "$SERVER_DIR/.service.tmp" "$SERVICE_FILE"
 rm -f "$SERVER_DIR/.service.tmp"
 SUDO systemctl daemon-reload

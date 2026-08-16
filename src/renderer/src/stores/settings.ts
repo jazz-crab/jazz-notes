@@ -72,7 +72,7 @@ export const useSettingsStore = create<SettingsState>()(
       }),
       merge: (persisted, current) => {
         const saved = { ...(persisted as Partial<SettingsState>) }
-        if (saved.syncRemote === 'rentgen:git/jazz-notes.git') {
+        if (saved.syncRemote === 'rentgen:git/jazz-notes-vault.git') {
           saved.syncRemote = DEFAULT_SYNC_REMOTE
         }
         return { ...current, ...saved }
