@@ -8,18 +8,32 @@ import { parentOf, moveFolderPath, leafName } from '../utils/folder'
 import { historyStore } from './history'
 
 const ID_DIGITS = 5
-const ID_STORAGE_KEY = 'jazz-note:next-id'
+const ID_STORAGE_KEY = 'jazz-notes:next-id'
+const LEGACY_ID_STORAGE_KEY = 'jazz-note:next-id'
 const ignoreWatcher = new Set<string>()
 
 const pad = (n: number) => String(n).padStart(ID_DIGITS, '0')
+
+function readNextId(): number {
+  let raw = localStorage.getItem(ID_STORAGE_KEY)
+  if (raw === null) {
+    // one-time migration from the pre-rename key
+    raw = localStorage.getItem(LEGACY_ID_STORAGE_KEY)
+    if (raw !== null) {
+      localStorage.setItem(ID_STORAGE_KEY, raw)
+      localStorage.removeItem(LEGACY_ID_STORAGE_KEY)
+    }
+  }
+  const stored = parseInt(raw || '', 10)
+  return Number.isNaN(stored) ? 0 : stored
+}
 
 function computeAndStoreNextId(notes: Note[]): string {
   const max = notes.reduce((m, n) => {
     const id = parseInt(n.meta.id || '', 10)
     return Number.isNaN(id) ? m : Math.max(m, id)
   }, 0)
-  const stored = parseInt(localStorage.getItem(ID_STORAGE_KEY) || '', 10)
-  const next = Math.max(max, Number.isNaN(stored) ? 0 : stored) + 1
+  const next = Math.max(max, readNextId()) + 1
   localStorage.setItem(ID_STORAGE_KEY, String(next))
   return pad(next)
 }
