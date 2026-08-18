@@ -3,6 +3,7 @@ export interface NoteMeta {
   title: string
   priority?: 0 | 1 | 2 | 3 | 4
   due?: string
+  done?: boolean
   color?: string
   created?: string
   updated?: string
@@ -95,6 +96,8 @@ export function parseNote(raw: string): NoteData {
       if (Number.isInteger(p) && p >= 0 && p <= 4) meta.priority = p as NoteMeta['priority']
     }
     if (v.due !== undefined) meta.due = unquote(v.due)
+    if (v.done === 'true') meta.done = true
+    if (v.done === 'false') meta.done = false
     if (v.color !== undefined) meta.color = unquote(v.color)
     if (v.created !== undefined) meta.created = unquote(v.created)
     if (v.updated !== undefined) meta.updated = unquote(v.updated)
@@ -118,6 +121,7 @@ export function serializeNote(meta: NoteMeta, content: string): string {
   if (meta.id) lines.push(`id: ${quote(meta.id)}`)
   if (meta.priority) lines.push(`priority: ${meta.priority}`)
   if (meta.due) lines.push(`due: ${quote(meta.due)}`)
+  if (meta.done === true) lines.push('done: true')
   if (meta.color) lines.push(`color: ${quote(meta.color)}`)
   if (meta.created) lines.push(`created: ${quote(meta.created)}`)
   lines.push(`updated: ${quote(now)}`)

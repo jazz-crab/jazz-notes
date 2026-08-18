@@ -71,6 +71,24 @@ describe('parseNote', () => {
     expect(note.meta.priority).toBeUndefined()
   })
 
+  it('parses done: true', () => {
+    const raw = '---\ndone: true\n---\n\nBody'
+    const note = parseNote(raw)
+    expect(note.meta.done).toBe(true)
+  })
+
+  it('parses done: false', () => {
+    const raw = '---\ndone: false\n---\n\nBody'
+    const note = parseNote(raw)
+    expect(note.meta.done).toBe(false)
+  })
+
+  it('leaves done undefined for invalid values', () => {
+    const raw = '---\ndone: yes\n---\n\nBody'
+    const note = parseNote(raw)
+    expect(note.meta.done).toBeUndefined()
+  })
+
   it('derives the title from the first heading when frontmatter has none', () => {
     const note = parseNote('---\nid: "5"\n---\n\n## Not a heading\n# Real title')
     expect(note.meta.title).toBe('Not a heading')
@@ -135,5 +153,17 @@ describe('serializeNote', () => {
   it('writes tags as a comma-separated list', () => {
     const raw = serializeNote({ title: 'T', tags: ['one', 'two'] }, '')
     expect(raw).toContain('tags: [one, two]')
+  })
+
+  it('writes done: true when done is set', () => {
+    const raw = serializeNote({ title: 'T', done: true }, '')
+    expect(raw).toContain('done: true')
+  })
+
+  it('omits done when not set or false', () => {
+    const withoutDone = serializeNote({ title: 'T' }, '')
+    const withFalse = serializeNote({ title: 'T', done: false }, '')
+    expect(withoutDone).not.toContain('done:')
+    expect(withFalse).not.toContain('done:')
   })
 })
