@@ -127,6 +127,7 @@ export default function NoteEdit({ relPath, onBack }: Props) {
   const editorText = noteColor ? mixHex(noteColor, colors.fg, 0.45) : undefined
   const due = currentNote.meta.due ? new Date(currentNote.meta.due) : null
   const isOverdue = due && due < new Date()
+  const isDone = currentNote.meta.done === true
 
   return (
     <div style={styles.container}>
@@ -154,6 +155,9 @@ export default function NoteEdit({ relPath, onBack }: Props) {
         >
           <span style={{ ...iconStyle, fontSize: 18 }}>{'\uf1da'}</span>
         </button>
+        {isDone && (
+          <span style={doneBadgeStyle} title={t('context.done', lang)}>{'\u2713'}</span>
+        )}
         <SaveStatusCircle status={status} lastSavedAt={lastSavedAt} error={lastError} />
       </div>
 
@@ -279,6 +283,20 @@ const historyBtnStyle = (c: any) => ({
   borderRadius: 4,
   flexShrink: 0,
 })
+const doneBadgeStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 22,
+  height: 22,
+  borderRadius: '50%',
+  background: 'rgba(158, 206, 106, 0.15)',
+  border: '1px solid rgba(158, 206, 106, 0.5)',
+  color: '#9ece6a',
+  fontSize: 13,
+  fontWeight: 700,
+  flexShrink: 0,
+}
 const iconStyle: React.CSSProperties = {
   fontFamily: 'Symbols Nerd Font',
   fontSize: 20,
