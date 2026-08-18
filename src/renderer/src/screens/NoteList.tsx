@@ -23,26 +23,13 @@ interface Props {
 
 interface NoteItemProps {
   note: Note
-  index: number
-  isNew: boolean
   isDeleting: boolean
   onOpen: () => void
   onContextMenu: (e: React.MouseEvent) => void
   onDeleteConfirmed: () => void
 }
 
-function NoteItem({ note, index, isNew, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
-  const [entered, setEntered] = useState(false)
-
-  useEffect(() => {
-    if (isNew) {
-      setEntered(true)
-      return
-    }
-    const t = setTimeout(() => setEntered(true), index * 30)
-    return () => clearTimeout(t)
-  }, [isNew, index])
-
+function NoteItem({ note, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
   if (isDeleting) {
     return (
       <div
@@ -56,17 +43,7 @@ function NoteItem({ note, index, isNew, isDeleting, onOpen, onContextMenu, onDel
     )
   }
 
-  return (
-    <div
-      style={{
-        opacity: entered ? 1 : 0,
-        transform: entered ? 'none' : isNew ? 'translateX(24px)' : 'translateY(10px)',
-        transition: 'opacity 0.3s ease, transform 0.3s ease',
-      }}
-    >
-      <NoteCard note={note} isActive={false} onClick={onOpen} onContextMenu={onContextMenu} />
-    </div>
-  )
+  return <NoteCard note={note} isActive={false} onClick={onOpen} onContextMenu={onContextMenu} />
 }
 
 type NoteAction = { note: Note; action: 'rename' | 'date' | 'color' | 'delete' } | null
@@ -91,7 +68,6 @@ export default function NoteList({ onSelectNote }: Props) {
 
   const [newTitle, setNewTitle] = useState('')
   const [deleting, setDeleting] = useState<Set<string>>(new Set())
-  const [createdRelPath, setCreatedRelPath] = useState<string | null>(null)
   const [menu, setMenu] = useState<{ x: number; y: number; note: Note } | null>(null)
   const [noteAction, setNoteAction] = useState<NoteAction>(null)
   const [movingNote, setMovingNote] = useState<Note | null>(null)
@@ -182,9 +158,8 @@ export default function NoteList({ onSelectNote }: Props) {
 
   const handleCreate = async (quick = false) => {
     setNewTitle('')
-    const relPath = await createNote(newTitle, setCreatedRelPath)
+    const relPath = await createNote(newTitle)
     if (relPath && !quick) onSelectNote(relPath)
-    setTimeout(() => setCreatedRelPath(null), 1500)
   }
 
   const openMenu = (note: Note, x: number, y: number) => {
@@ -239,12 +214,10 @@ export default function NoteList({ onSelectNote }: Props) {
               {searchQuery ? t('no.results', lang) : t('no.notes', lang)}
             </div>
           )}
-          {filtered.map((note, i) => (
+          {filtered.map((note) => (
             <NoteItem
               key={note.relPath}
               note={note}
-              index={i}
-              isNew={note.relPath === createdRelPath}
               isDeleting={deleting.has(note.relPath)}
               onOpen={() => onSelectNote(note.relPath)}
               onContextMenu={(e) => {

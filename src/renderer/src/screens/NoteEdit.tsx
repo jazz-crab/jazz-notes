@@ -36,7 +36,6 @@ export default function NoteEdit({ relPath, onBack }: Props) {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [lastError, setLastError] = useState<string | null>(null)
   const [sheet, setSheet] = useState<'color' | 'date' | null>(null)
-  const [leaving, setLeaving] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
@@ -46,20 +45,10 @@ export default function NoteEdit({ relPath, onBack }: Props) {
     }
   }, [relPath, setCurrentNote])
 
-  const backFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (backFallbackRef.current) clearTimeout(backFallbackRef.current)
-    }
-  }, [])
-
   const handleBack = useCallback(() => {
-    if (leaving) return
-    setLeaving(true)
     if (isDirty) void performSaveRef.current()
-    backFallbackRef.current = setTimeout(onBack, 260)
-  }, [leaving, isDirty, onBack])
+    onBack()
+  }, [isDirty, onBack])
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -139,19 +128,8 @@ export default function NoteEdit({ relPath, onBack }: Props) {
   const due = currentNote.meta.due ? new Date(currentNote.meta.due) : null
   const isOverdue = due && due < new Date()
 
-  const handleRootAnimationEnd = (e: React.AnimationEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return
-    if (leaving) onBack()
-  }
-
   return (
-    <div
-      style={{
-        ...styles.container,
-        animation: leaving ? 'noteOut 0.22s ease both' : 'noteIn 0.28s ease both',
-      }}
-      onAnimationEnd={handleRootAnimationEnd}
-    >
+    <div style={styles.container}>
       <div style={headerStyle(colors)}>
         <button style={backBtnStyle(colors)} onClick={handleBack}>{'\u2190'}</button>
         <input
