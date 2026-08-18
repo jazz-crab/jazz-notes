@@ -74,6 +74,8 @@ export default function NoteList({ onSelectNote }: Props) {
   const loading = useNotesStore((s) => s.loading)
   const sidebarSelection = useNotesStore((s) => s.sidebarSelection)
   const searchQuery = useNotesStore((s) => s.searchQuery)
+  const searchResults = useNotesStore((s) => s.searchResults)
+  const searchLoading = useNotesStore((s) => s.searchLoading)
   const sortBy = useNotesStore((s) => s.sortBy)
   const loadNotes = useNotesStore((s) => s.loadNotes)
   const setSearchQuery = useNotesStore((s) => s.setSearchQuery)
@@ -162,17 +164,17 @@ export default function NoteList({ onSelectNote }: Props) {
     if (sidebarSelection.type === 'nodate') {
       if (n.meta.due) return false
     }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      if (
-        !n.title.toLowerCase().includes(q) &&
-        !n.body.toLowerCase().includes(q)
-      )
-        return false
-    }
     if (n.meta.done && !showDone) return false
     return true
   })
+
+  if (searchQuery && searchResults) {
+    const byPath = new Map(searchResults.map((r) => [r.relPath, r]))
+    filtered = filtered.filter((n) => byPath.has(n.relPath))
+  }
+  if (searchQuery && searchResults === null) {
+    filtered = []
+  }
 
   if (sortBy === 'due') {
     filtered = [...filtered].sort((a, b) => {
@@ -245,7 +247,11 @@ export default function NoteList({ onSelectNote }: Props) {
           {loading && <div style={loadingStyle(colors)}>{t('loading', lang)}</div>}
           {!loading && filtered.length === 0 && (
             <div style={emptyStyle(colors)}>
-              {searchQuery ? t('no.results', lang) : t('no.notes', lang)}
+              {searchQuery && searchLoading
+                ? t('searching', lang)
+                : searchQuery
+                  ? t('no.results', lang)
+                  : t('no.notes', lang)}
             </div>
           )}
           {filtered.map((note) => (

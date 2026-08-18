@@ -65,6 +65,8 @@ interface NotesState {
   currentNote: Note | null
   sidebarSelection: SidebarSelection
   searchQuery: string
+  searchResults: Array<{ relPath: string; title: string; snippet: string }> | null
+  searchLoading: boolean
   sortBy: SortBy
   loading: boolean
   notesPath: string
@@ -84,6 +86,7 @@ interface NotesState {
   updateNoteMetaByPath: (relPath: string, patch: Partial<NoteMeta>) => Promise<void>
   setSidebarSelection: (sel: SidebarSelection) => void
   setSearchQuery: (q: string) => void
+  runSearch: (query: string) => Promise<void>
   setSortBy: (s: SortBy) => void
   replaceNote: (relPath: string, note: Note) => void
   createFolder: (name: string) => Promise<void>
@@ -98,6 +101,8 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   currentNote: null,
   sidebarSelection: { type: 'all' },
   searchQuery: '',
+  searchResults: null,
+  searchLoading: false,
   sortBy: 'date',
   loading: false,
   notesPath: '',
@@ -139,6 +144,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       }
     }
     set({ notes, folders, loading: false })
+    void window.jazz.indexInit(path)
   },
 
   setCurrentNote: async (relPath: string | null) => {
@@ -304,7 +310,20 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   setSidebarSelection: (sel) => set({ sidebarSelection: sel }),
-  setSearchQuery: (q) => set({ searchQuery: q }),
+  setSearchQuery: (q) => {
+    set({ searchQuery: q })
+    void get().runSearch(q)
+  },
+  runSearch: async (query) => {
+    const q = query.trim()
+    if (!q) {
+      set({ searchResults: null, searchLoading: false })
+      return
+    }
+    set({ searchLoading: true })
+    const results = await window.jazz.indexSearch(q, 100)
+    set({ searchResults: results, searchLoading: false })
+  },
   setSortBy: (s) => set({ sortBy: s }),
 
   replaceNote: (relPath, note) => {
