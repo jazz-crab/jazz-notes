@@ -37,7 +37,7 @@ export interface ThemePalette {
   light: PaletteVariant
 }
 
-export type PaletteId = 'tokyonight' | 'everforest' | 'catppuccin'
+export type PaletteId = 'tokyonight' | 'everforest' | 'catppuccin' | 'nord'
 
 export const palettes: ThemePalette[] = [
   {
@@ -253,6 +253,78 @@ export const palettes: ThemePalette[] = [
       noteColors: {
         red: '#d20f39', orange: '#fe640b', yellow: '#df8e1d',
         green: '#40a02b', blue: '#1e66f5', purple: '#8839ef', pink: '#ea76cb',
+      },
+    },
+  },
+  {
+    id: 'nord',
+    label: 'Nord',
+    dark: {
+      colors: {
+        bg: '#2e3440',
+        bgAlt: '#3b4252',
+        bgHighlight: '#434c5e',
+        bgSidebar: '#2e3440',
+        bgPopup: '#3b4252',
+        bgVisual: '#434c5e',
+        border: '#4c566a',
+        fg: '#eceff4',
+        fgDark: '#d8dee9',
+        fgGutter: '#4c566a',
+        fgSidebar: '#d8dee9',
+        comment: '#616e88',
+        red: '#bf616a',
+        green: '#a3be8c',
+        green1: '#88c0d0',
+        yellow: '#ebcb8b',
+        orange: '#d08770',
+        blue: '#81a1c1',
+        blue0: '#5e81ac',
+        purple: '#b48ead',
+        magenta: '#b48ead',
+        cyan: '#88c0d0',
+        teal: '#8fbcbb',
+      },
+      priorityColors: {
+        0: '#616e88', 1: '#81a1c1', 2: '#ebcb8b', 3: '#d08770', 4: '#bf616a',
+      },
+      noteColors: {
+        red: '#bf616a', orange: '#d08770', yellow: '#ebcb8b',
+        green: '#a3be8c', blue: '#81a1c1', purple: '#b48ead', pink: '#b48ead',
+      },
+    },
+    light: {
+      colors: {
+        bg: '#eceff4',
+        bgAlt: '#e5e9f0',
+        bgHighlight: '#d8dee9',
+        bgSidebar: '#e5e9f0',
+        bgPopup: '#eceff4',
+        bgVisual: '#d8dee9',
+        border: '#a5adcb',
+        fg: '#2e3440',
+        fgDark: '#3b4252',
+        fgGutter: '#7b88a1',
+        fgSidebar: '#2e3440',
+        comment: '#7b88a1',
+        red: '#bf616a',
+        green: '#a3be8c',
+        green1: '#5e81ac',
+        yellow: '#ebcb8b',
+        orange: '#d08770',
+        blue: '#5e81ac',
+        blue0: '#4c566a',
+        purple: '#b48ead',
+        magenta: '#b48ead',
+        cyan: '#88c0d0',
+        teal: '#8fbcbb',
+      },
+      priorityColors: {
+        0: '#7b88a1', 1: '#5e81ac', 2: '#ebcb8b', 3: '#d08770', 4: '#bf616a',
+      },
+      noteColors: {
+        red: '#bf616a', orange: '#d08770', yellow: '#ebcb8b',
+        green: '#a3be8c', blue: '#81a1c1', purple: '#b48ead', pink: '#b48ead',
       },
     },
   },
