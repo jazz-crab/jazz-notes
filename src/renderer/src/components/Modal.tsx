@@ -46,7 +46,7 @@ const dialogStyle = (c: any): React.CSSProperties => ({
   border: `1px solid ${c.border}`,
   borderRadius: 10,
   padding: 24,
-  minWidth: 320,
+  minWidth: 260,
   maxWidth: '90vw' as const,
   maxHeight: '80vh',
   overflowY: 'auto',

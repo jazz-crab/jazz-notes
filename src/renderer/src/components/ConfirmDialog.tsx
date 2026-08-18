@@ -69,7 +69,7 @@ const dialogStyle = (c: any, closing: boolean) => ({
   background: c.bgPopup,
   border: `1px solid ${c.border}`,
   borderRadius: 10,
-  padding: 24,
+  padding: 20,
   minWidth: 280,
   maxWidth: '90vw' as const,
   boxShadow: '0 8px 32px rgba(0,0,0,0.4)',

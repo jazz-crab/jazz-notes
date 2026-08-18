@@ -227,7 +227,7 @@ export default function NoteList({ onSelectNote }: Props) {
         <Sidebar />
       )}
       <div style={mainStyle}>
-        <div style={topBarStyle}>
+        <div style={{ ...topBarStyle, ...(isMobile ? { padding: '8px 12px 6px' } : {}) }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {isMobile && (
               <button style={hamburgerStyle(colors)} onClick={() => setSidebarOpen(true)}>{'\u2630'}</button>
@@ -262,7 +262,7 @@ export default function NoteList({ onSelectNote }: Props) {
           <SyncIndicator />
         </div>
 
-        <div style={listStyle}>
+        <div style={{ ...listStyle, ...(isMobile ? { padding: '6px 12px' } : {}) }}>
           {loading && <div style={loadingStyle(colors)}>{t('loading', lang)}</div>}
           {!loading && filtered.length === 0 && (
             <div style={emptyStyle(colors)}>

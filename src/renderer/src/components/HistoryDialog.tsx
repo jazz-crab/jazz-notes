@@ -139,7 +139,8 @@ const listStyle: React.CSSProperties = {
   gap: 6,
   maxHeight: '55vh',
   overflowY: 'auto',
-  minWidth: 420,
+  minWidth: 300,
+  maxWidth: '90vw',
 }
 const itemStyle = (c: any) => ({
   display: 'flex',
