@@ -253,6 +253,9 @@ export default function NoteList({ onSelectNote }: Props) {
           y={menu.y}
           onClose={() => setMenu(null)}
           items={[
+            { icon: '✓', iconColor: '#9ece6a', label: '', onClick: () => void updateNoteMetaByPath(menu.note.relPath, { done: true }) },
+            { icon: '🕐', iconColor: '#ff9e64', label: '', onClick: () => setNoteAction({ note: menu.note, action: 'date' }) },
+            { icon: '✕', iconColor: '#848597', label: '', onClick: () => void updateNoteMetaByPath(menu.note.relPath, { done: false, due: undefined }) },
             { label: t('context.rename', lang), onClick: () => setNoteAction({ note: menu.note, action: 'rename' }) },
             { label: t('context.move.note', lang), onClick: () => setMovingNote(menu.note) },
             { label: t('context.change.date', lang), onClick: () => setNoteAction({ note: menu.note, action: 'date' }) },

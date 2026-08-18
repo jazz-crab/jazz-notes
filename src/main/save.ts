@@ -58,7 +58,8 @@ function buildMeta(draft: NoteDraft, existing: NoteMeta | null): NoteMeta {
   }
   if (existing?.id) meta.id = existing.id
   if (draft.priority !== undefined) meta.priority = draft.priority
-  if (draft.due) meta.due = draft.due
+  if (draft.done !== undefined) meta.done = draft.done
+  if (draft.due !== undefined && draft.due !== '') meta.due = draft.due
   if (draft.color) meta.color = draft.color
   if (existing?.created) meta.created = existing.created
   if (draft.tags?.length) meta.tags = draft.tags

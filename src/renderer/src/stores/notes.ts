@@ -272,9 +272,10 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const draft: NoteDraft = {
       title: meta.title,
       text: note.body,
-      due: meta.due,
+      due: meta.due ?? '',
       color: meta.color,
       priority: meta.priority,
+      done: meta.done,
       tags: meta.tags,
     }
     await window.jazz.updateNoteDraft(relPath, draft, notesPath)

@@ -23,6 +23,7 @@ export interface NoteDraft {
   due?: string
   color?: string
   priority?: 0 | 1 | 2 | 3 | 4
+  done?: boolean
   tags?: string[]
 }
 

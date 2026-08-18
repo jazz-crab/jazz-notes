@@ -6,6 +6,8 @@ export interface ContextMenuItem {
   label: string
   onClick: () => void
   danger?: boolean
+  icon?: string
+  iconColor?: string
 }
 
 interface Props {
@@ -19,6 +21,9 @@ export default function ContextMenu({ x, y, items, onClose }: Props) {
   const colors = useColors()
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const [hoverIcon, setHoverIcon] = useState<string | null>(null)
+  const iconItems = items.filter((i) => i.icon)
+  const textItems = items.filter((i) => !i.icon)
 
   useEffect(() => {
     const close = () => onClose()
@@ -56,7 +61,25 @@ export default function ContextMenu({ x, y, items, onClose }: Props) {
       style={menuStyle(colors, pos)}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      {items.map((item) => (
+      {iconItems.length > 0 && (
+        <div style={iconRowStyle}>
+          {iconItems.map((item) => (
+            <button
+              key={item.icon}
+              style={iconStyle(colors, item, hoverIcon === item.icon)}
+              onMouseEnter={() => setHoverIcon(item.icon ?? '')}
+              onMouseLeave={() => setHoverIcon(null)}
+              onClick={() => {
+                onClose()
+                item.onClick()
+              }}
+            >
+              {item.icon}
+            </button>
+          ))}
+        </div>
+      )}
+      {textItems.map((item) => (
         <button
           key={item.label}
           style={itemStyle(colors, !!item.danger)}
@@ -95,4 +118,23 @@ const itemStyle = (c: any, danger: boolean): React.CSSProperties => ({
   color: danger ? c.red : c.fg,
   cursor: 'pointer',
   whiteSpace: 'nowrap' as const,
+})
+const iconRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 4,
+  padding: 4,
+  marginBottom: 2,
+}
+const iconStyle = (c: any, item: ContextMenuItem, hovered: boolean): React.CSSProperties => ({
+  width: 28,
+  height: 28,
+  borderRadius: 6,
+  border: `1px solid ${c.border}`,
+  fontSize: 14,
+  color: item.iconColor ?? c.fg,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: hovered ? 'rgba(127, 127, 127, 0.25)' : 'transparent',
 })
