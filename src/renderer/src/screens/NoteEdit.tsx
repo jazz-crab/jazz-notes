@@ -159,6 +159,15 @@ export default function NoteEdit({ relPath, onBack }: Props) {
           value={currentNote.meta.title}
           placeholder={t('untitled', lang)}
           onChange={(e) => handleTitleChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab' || e.key === 'Enter') {
+              e.preventDefault()
+              const el = document.querySelector<HTMLElement>('.cm-content')
+              if (el) {
+                setTimeout(() => el.focus(), 0)
+              }
+            }
+          }}
         />
         <button
           style={historyBtnStyle(colors)}

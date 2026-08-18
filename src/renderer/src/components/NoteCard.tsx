@@ -4,6 +4,8 @@ import { mixHex } from '../utils/color'
 import { useSettingsStore } from '../stores/settings'
 import { localeOf, t } from '../utils/i18n'
 import { parentOf, leafName } from '../utils/folder'
+import { formatSmartCountdown } from '../utils/countdown'
+import { useEffect, useState } from 'react'
 import type React from 'react'
 
 interface Props {
@@ -16,10 +18,18 @@ interface Props {
 export default function NoteCard({ note, isActive, onClick, onContextMenu }: Props) {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
+  const showCountdown = useSettingsStore((s) => s.showCountdown)
   const noteColorMap = useNoteColors()
   const noteColor = note.meta.color ? noteColorMap[note.meta.color] : null
   const due = note.meta.due ? new Date(note.meta.due) : null
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [])
   const isOverdue = due && due < new Date()
+  const isFuture = due && due.getTime() > now
+  const countdown = isFuture && showCountdown ? formatSmartCountdown(due.getTime() - now, lang) : null
   const preview = note.body.replace(/^#+\s*/gm, '').replace(/[*~`>-]/g, '').trim().slice(0, 140)
   const cardBg = noteColor ? mixHex(noteColor, colors.bgAlt, 0.1) : undefined
   const folder = parentOf(note.relPath)
@@ -53,6 +63,7 @@ export default function NoteCard({ note, isActive, onClick, onContextMenu }: Pro
               {due.toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' })}
             </span>
           )}
+          {countdown && <span style={countdownStyle(colors)}>{countdown}</span>}
           {note.meta.updated && (
             <span style={updatedStyle(colors)}>
               {new Date(note.meta.updated).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' })}
@@ -108,6 +119,7 @@ const previewStyle = (c: any) => ({
 })
 const dueStyle = (_c: any) => ({ color: 'var(--yellow)' })
 const overdueStyle = (_c: any) => ({ color: 'var(--red)', fontWeight: 600 })
+const countdownStyle = (c: any) => ({ color: c.orange, fontWeight: 700 })
 const updatedStyle = (c: any) => ({ color: c.comment })
 const pillStyle = (c: any) => ({
   fontSize: 10,

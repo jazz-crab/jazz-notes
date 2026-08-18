@@ -369,6 +369,7 @@ export function getThemeCSSVars(colors: ThemeColors): Record<string, string> {
 
 export function getAtomicEditorCSSVars(colors: ThemeColors): Record<string, string> {
   return {
+    '--atomic-editor-font': 'var(--app-font)',
     '--atomic-editor-font-mono': 'var(--app-font)',
     '--atomic-editor-fg': colors.fg,
     '--atomic-editor-fg-muted': colors.comment,

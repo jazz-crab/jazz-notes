@@ -4,7 +4,7 @@ import { useColors } from '../theme'
 import { t } from '../utils/i18n'
 import { useSettingsStore } from '../stores/settings'
 import { useSyncStore } from '../stores/sync'
-import { isInFolder, leafName } from '../utils/folder'
+import { isInFolder, leafName, depthOf } from '../utils/folder'
 import Sidebar from '../components/Sidebar'
 import NoteCard from '../components/NoteCard'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -180,10 +180,10 @@ export default function NoteList({ onSelectNote }: Props) {
     })
   }
 
-  const handleCreate = async () => {
+  const handleCreate = async (quick = false) => {
     setNewTitle('')
     const relPath = await createNote(newTitle, setCreatedRelPath)
-    if (relPath) onSelectNote(relPath)
+    if (relPath && !quick) onSelectNote(relPath)
     setTimeout(() => setCreatedRelPath(null), 1500)
   }
 
@@ -264,10 +264,10 @@ export default function NoteList({ onSelectNote }: Props) {
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder={t('new.note.placeholder', lang)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreate()
+                if (e.key === 'Enter') handleCreate(e.ctrlKey || e.metaKey)
               }}
             />
-            <button style={createBtnStyle(colors)} onClick={handleCreate}>{t('create', lang)}</button>
+            <button style={createBtnStyle(colors)} onClick={(e) => handleCreate(e.ctrlKey || e.metaKey)}>{t('create', lang)}</button>
           </div>
         </div>
       </div>
@@ -308,7 +308,7 @@ export default function NoteList({ onSelectNote }: Props) {
                   setMovingNote(null)
                 }}
               >
-                {"\u2514"} {leafName(folder)}
+                {"\u2514"} <span style={{ paddingLeft: depthOf(folder) * 14 }}>{leafName(folder)}</span>
               </button>
             ))}
           </div>

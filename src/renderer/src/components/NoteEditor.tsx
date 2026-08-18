@@ -36,6 +36,7 @@ export default function NoteEditor({ documentId, value, onChange, onSave }: Prop
   const restoringRef = useRef(false)
   const lastStepAtRef = useRef(0)
   const showToast = useHistoryToast((s) => s.showToast)
+  const clearToast = useHistoryToast((s) => s.clearToast)
   const lang = useSettingsStore((s) => s.lang)
 
   const getView = useCallback(() => {
@@ -91,8 +92,9 @@ export default function NoteEditor({ documentId, value, onChange, onSave }: Prop
   }, [getView, replaceDoc, showToast, documentId, lang])
 
   useEffect(() => {
+    clearToast()
     handleRef.current?.focus()
-  }, [documentId])
+  }, [documentId, clearToast])
 
   const handleChange = useMemo(() => (md: string) => onChangeRef.current(md), [])
 

@@ -12,11 +12,13 @@ export interface HistoryStacks {
 interface ToastState {
   toast: { message: string; nonce: number } | null
   showToast: (message: string) => void
+  clearToast: () => void
 }
 
 export const useHistoryToast = create<ToastState>((set) => ({
   toast: null,
   showToast: (message) => set({ toast: { message, nonce: Date.now() } }),
+  clearToast: () => set({ toast: null }),
 }))
 
 const stacks = new Map<string, HistoryStacks>()
