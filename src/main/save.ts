@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join, resolve, sep } from 'path'
 import { parseNote, serializeNote, nextId, type NoteDraft, type NoteMeta } from '../shared/note'
+import { getIndexStore } from './index-store'
 
 export interface SavedNote {
   relPath: string
@@ -104,6 +105,17 @@ export async function saveNotes(
   }
 
   onChanged?.()
+
+  const store = getIndexStore()
+  if (store) {
+    for (const f of files) {
+      try {
+        const { meta, content } = parseNote(f.raw)
+        store.upsert(f.relPath, meta, content)
+      } catch { /* ignore */ }
+    }
+  }
+
   return { saved }
 }
 
@@ -135,6 +147,14 @@ export async function updateNote(
   await writeFile(full, serializeNote(meta, draft.text || ''), 'utf-8')
   onChanged?.()
 
+  const store = getIndexStore()
+  if (store) {
+    try {
+      const { meta: m, content } = parseNote(await readFile(full, 'utf-8'))
+      store.upsert(clean, m, content)
+    } catch { /* ignore */ }
+  }
+
   return { saved: [{ relPath: clean, id: meta.id || '', title: meta.title }] }
 }
 
@@ -152,6 +172,14 @@ export async function writeRaw(
   await mkdir(join(full, '..'), { recursive: true })
   await writeFile(full, content, 'utf-8')
   onChanged?.()
+
+  const store = getIndexStore()
+  if (store) {
+    try {
+      const { meta, content: body } = parseNote(await readFile(full, 'utf-8'))
+      store.upsert(clean, meta, body)
+    } catch { /* ignore */ }
+  }
 }
 
 async function fileExists(p: string): Promise<boolean> {

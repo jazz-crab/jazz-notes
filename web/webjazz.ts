@@ -112,6 +112,10 @@ export function installWebJazz() {
       return saved?.[0] || { relPath, id: '', title: draft.title }
     },
 
+    indexInit: async () => 0,
+    indexSearch: async () => [],
+    indexClose: async () => true,
+
     readHistory: async () => {
       const { data } = await call<ApiResponse>('/history')
       return data || {}

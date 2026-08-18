@@ -26,6 +26,10 @@ const api = {
     ipcRenderer.invoke('notes:createNoteDraft', draft, dirPath),
   updateNoteDraft: (relPath: string, draft: NoteDraft, dirPath?: string): Promise<SavedNoteInfo> =>
     ipcRenderer.invoke('notes:updateNoteDraft', relPath, draft, dirPath),
+  indexInit: (dirPath?: string): Promise<number> => ipcRenderer.invoke('index:init', dirPath),
+  indexSearch: (query: string, limit?: number): Promise<Array<{ relPath: string; title: string; snippet: string }>> =>
+    ipcRenderer.invoke('index:search', query, limit),
+  indexClose: (): Promise<boolean> => ipcRenderer.invoke('index:close'),
   readHistory: (): Promise<Record<string, unknown>> =>
     ipcRenderer.invoke('history:read'),
   writeHistory: (data: unknown): Promise<boolean> =>

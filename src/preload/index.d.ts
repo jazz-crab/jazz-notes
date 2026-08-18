@@ -14,6 +14,12 @@ export interface JazzAPI {
   selectDirectory: () => Promise<string | null>
   createNoteDraft: (draft: NoteDraft, dirPath?: string) => Promise<SavedNoteInfo>
   updateNoteDraft: (relPath: string, draft: NoteDraft, dirPath?: string) => Promise<SavedNoteInfo>
+  indexInit: (dirPath?: string) => Promise<number>
+  indexSearch: (
+    query: string,
+    limit?: number
+  ) => Promise<Array<{ relPath: string; title: string; snippet: string }>>
+  indexClose: () => Promise<boolean>
   readHistory: () => Promise<Record<string, unknown>>
   writeHistory: (data: unknown) => Promise<boolean>
   gitEnsure: (repoDir: string, remoteUrl: string) => Promise<boolean>

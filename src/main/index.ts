@@ -16,6 +16,7 @@ import {
   type GitAuth,
 } from './git'
 import { saveNotes, updateNote } from './save'
+import { getIndexStore } from './index-store'
 
 let mainWindow: BrowserWindow | null = null
 let watcher: ReturnType<typeof watch> | null = null
@@ -111,6 +112,7 @@ function registerIpc() {
     const notesPath = dirPath || getDefaultNotesPath()
     const fullPath = join(notesPath, relPath)
     await unlink(fullPath)
+    getIndexStore().remove(relPath)
     return true
   })
 
@@ -135,6 +137,7 @@ function registerIpc() {
     const notesPath = dirPath || getDefaultNotesPath()
     const fullPath = join(notesPath, relPath)
     await rm(fullPath, { recursive: true, force: true })
+    getIndexStore().scan(notesPath)
     scheduleCommit(notesPath)
     return true
   })
@@ -146,6 +149,7 @@ function registerIpc() {
     await ensureNotesDir(notesPath)
     await mkdir(join(newFullPath, '..'), { recursive: true })
     await rename(fullPath, newFullPath)
+    getIndexStore().rename(relPath, newRelPath)
     scheduleCommit(notesPath)
     return true
   })
@@ -171,6 +175,22 @@ function registerIpc() {
     }
     await walk(notesPath, '')
     return result
+  })
+
+  ipcMain.handle('index:init', async (_e, dirPath?: string) => {
+    const notesPath = dirPath || getDefaultNotesPath()
+    const s = getIndexStore()
+    s.open(notesPath)
+    return s.scan(notesPath)
+  })
+
+  ipcMain.handle('index:search', (_e, query: string, limit?: number) =>
+    getIndexStore().search(query, limit ?? 50)
+  )
+
+  ipcMain.handle('index:close', () => {
+    getIndexStore().close()
+    return true
   })
 
   ipcMain.handle('history:read', async () => {
