@@ -51,6 +51,7 @@ type NoteAction = { note: Note; action: 'rename' | 'date' | 'color' | 'delete' }
 export default function NoteList({ onSelectNote }: Props) {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
+  const showDone = useSettingsStore((s) => s.showDone)
   const notes = useNotesStore((s) => s.notes)
   const loading = useNotesStore((s) => s.loading)
   const sidebarSelection = useNotesStore((s) => s.sidebarSelection)
@@ -138,6 +139,7 @@ export default function NoteList({ onSelectNote }: Props) {
       )
         return false
     }
+    if (n.meta.done && !showDone) return false
     return true
   })
 

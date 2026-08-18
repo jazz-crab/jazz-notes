@@ -49,7 +49,8 @@ export default function NoteCard({ note, isActive, onClick, onContextMenu }: Pro
           {noteColor && (
             <span style={{ ...colorDot(noteColor) }} />
           )}
-          <span style={titleStyle(colors)}>{note.title || t('untitled', lang)}</span>
+          {note.meta.done && <span style={doneMarkStyle}>{'\u2713'}</span>}
+          <span style={titleStyle(colors, note.meta.done)}>{note.title || t('untitled', lang)}</span>
         </div>
         {preview && <div style={previewStyle(colors)}>{preview}</div>}
         <div style={styles.footer}>
@@ -98,7 +99,7 @@ const colorDot = (c: string) => ({
   background: c,
   flexShrink: 0,
 })
-const titleStyle = (c: any) => ({
+const titleStyle = (c: any, done?: boolean) => ({
   fontWeight: 600,
   fontSize: 14,
   color: c.fg,
@@ -106,7 +107,14 @@ const titleStyle = (c: any) => ({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap' as const,
   flex: 1,
+  opacity: done ? 0.6 : 1,
 })
+const doneMarkStyle: React.CSSProperties = {
+  color: '#9ece6a',
+  fontWeight: 700,
+  fontSize: 13,
+  flexShrink: 0,
+}
 const previewStyle = (c: any) => ({
   fontSize: 12,
   color: c.comment,

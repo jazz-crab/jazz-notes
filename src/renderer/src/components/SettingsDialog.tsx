@@ -26,6 +26,8 @@ export default function SettingsDialog() {
   const setNotesPath = useSettingsStore((s) => s.setNotesPath)
   const showCountdown = useSettingsStore((s) => s.showCountdown)
   const setShowCountdown = useSettingsStore((s) => s.setShowCountdown)
+  const showDone = useSettingsStore((s) => s.showDone)
+  const setShowDone = useSettingsStore((s) => s.setShowDone)
   const syncRemote = useSettingsStore((s) => s.syncRemote)
   const setSyncRemote = useSettingsStore((s) => s.setSyncRemote)
   const syncUser = useSettingsStore((s) => s.syncUser)
@@ -148,6 +150,12 @@ export default function SettingsDialog() {
                 <span style={toggleLabelStyle(isDark ? 'dark' : 'light')}>{t('show.countdown', lang)}</span>
                 <button style={switchTrackStyle(showCountdown)} onClick={() => setShowCountdown(!showCountdown)}>
                   <span style={switchThumbStyle(showCountdown)} />
+                </button>
+              </div>
+              <div style={toggleGroupStyle}>
+                <span style={toggleLabelStyle(isDark ? 'dark' : 'light')}>{t('show.done', lang)}</span>
+                <button style={switchTrackStyle(showDone)} onClick={() => setShowDone(!showDone)}>
+                  <span style={switchThumbStyle(showDone)} />
                 </button>
               </div>
             </>

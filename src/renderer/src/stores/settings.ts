@@ -14,6 +14,7 @@ interface SettingsState {
   font: FontId
   notesPath: string
   showCountdown: boolean
+  showDone: boolean
   syncRemote: string
   syncUser: string
   syncPass: string
@@ -26,6 +27,7 @@ interface SettingsState {
   setFont: (font: FontId) => void
   setNotesPath: (path: string) => void
   setShowCountdown: (show: boolean) => void
+  setShowDone: (show: boolean) => void
   setSyncRemote: (url: string) => void
   setSyncUser: (user: string) => void
   setSyncPass: (pass: string) => void
@@ -41,6 +43,7 @@ export const useSettingsStore = create<SettingsState>()(
       font: 'neon',
       notesPath: '',
       showCountdown: true,
+      showDone: false,
       syncRemote: DEFAULT_SYNC_REMOTE,
       syncUser: '',
       syncPass: '',
@@ -53,6 +56,7 @@ export const useSettingsStore = create<SettingsState>()(
       setFont: (font) => set({ font }),
       setNotesPath: (notesPath) => set({ notesPath }),
       setShowCountdown: (showCountdown) => set({ showCountdown }),
+      setShowDone: (showDone) => set({ showDone }),
       setSyncRemote: (syncRemote) => set({ syncRemote }),
       setSyncUser: (syncUser) => set({ syncUser }),
       setSyncPass: (syncPass) => set({ syncPass }),
@@ -66,6 +70,7 @@ export const useSettingsStore = create<SettingsState>()(
         font: s.font,
         notesPath: s.notesPath,
         showCountdown: s.showCountdown,
+        showDone: s.showDone,
         syncRemote: s.syncRemote,
         syncUser: s.syncUser,
         syncPass: s.syncPass,
