@@ -1,7 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'http'
 import { timingSafeEqual } from 'crypto'
 import { saveNotes, type SaveResult } from '../src/main/save'
-import type { NoteDraft } from '../src/shared/note'
+import { readFile } from 'fs/promises'
+import { join } from 'path'
+import { parseNote, type NoteDraft } from '../src/shared/note'
+import { getIndexStore } from './index-store-web'
 
 const TOKEN = process.env.JAZZ_NOTE_TOKEN || ''
 
@@ -85,6 +88,15 @@ export async function handleNotePost(
 
   try {
     const result: SaveResult = await saveNotes(clean, vault, onChanged)
+    for (const saved of result.saved) {
+      try {
+        const raw = await readFile(join(vault, saved.relPath), 'utf-8')
+        const { meta, content } = parseNote(raw)
+        getIndexStore().upsert(saved.relPath, meta, content)
+      } catch {
+        // unreadable file — leave the index as is
+      }
+    }
     send(res, 200, { ok: true, ...result })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

@@ -67,6 +67,7 @@ jobs:
         run: |
           mkdir -p stage
           cp web/dist-server/server.js stage/server.js
+          cp web/dist-server/node-sqlite3-wasm.wasm stage/node-sqlite3-wasm.wasm
           cp -r web/dist stage/dist
           cp deploy/install.sh stage/install.sh
           cp deploy/jazz-note-server.service stage/jazz-note-server.service

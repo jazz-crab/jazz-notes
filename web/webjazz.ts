@@ -113,7 +113,11 @@ export function installWebJazz() {
     },
 
     indexInit: async () => 0,
-    indexSearch: async () => [],
+    indexSearch: async (query: string, limit?: number) => {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=${limit ?? 50}`)
+      if (!res.ok) return []
+      return (await res.json()) as Array<{ relPath: string; title: string; snippet: string }>
+    },
     indexClose: async () => true,
 
     readHistory: async () => {

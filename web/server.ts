@@ -15,6 +15,8 @@ import {
   type GitAuth,
 } from '../src/main/git'
 import { saveNotes, updateNote, writeRaw } from '../src/main/save'
+import { parseNote } from '../src/shared/note'
+import { getIndexStore } from './index-store-web'
 import { handleNotePost } from './note-receiver'
 const VAULT = process.env.JAZZ_VAULT || join(process.env.HOME || '/home/jc', 'jazz-notes-vault')
 const HISTORY_PATH = join(process.env.HOME || '/home/jc', '.jazz-notes-web-history.json')
@@ -47,6 +49,16 @@ function sanitize(relPath: string): string {
 
 function relOf(full: string): string {
   return relative(VAULT, full).split(sep).join('/')
+}
+
+async function reindexNote(relPath: string) {
+  try {
+    const raw = await readFile(sanitize(relPath), 'utf-8')
+    const { meta, content } = parseNote(raw)
+    getIndexStore().upsert(relPath, meta, content)
+  } catch {
+    // unreadable file — leave the index as is
+  }
 }
 
 async function readJson(req: IncomingMessage): Promise<unknown> {
@@ -148,6 +160,11 @@ const server = createServer(async (req, res) => {
         const rel = q.get('rel') || ''
         return send(res, 200, { content: await readFile(sanitize(rel), 'utf-8') })
       }
+      if (req.method === 'GET' && p.startsWith('/api/search')) {
+        const searchQ = url.searchParams.get('q') || ''
+        const limit = Number(url.searchParams.get('limit')) || 50
+        return send(res, 200, getIndexStore().search(searchQ, limit))
+      }
       if (req.method === 'GET' && p === '/api/history') {
         return send(res, 200, { data: await readHistory() })
       }
@@ -155,6 +172,7 @@ const server = createServer(async (req, res) => {
         const body = (await readJson(req)) as Record<string, unknown>
         if (typeof body.content === 'string' && body.rel) {
           await writeRaw(String(body.rel), body.content, VAULT, scheduleCommit)
+          await reindexNote(String(body.rel))
           return send(res, 200, { ok: true })
         }
         const draft = body as {
@@ -170,18 +188,23 @@ const server = createServer(async (req, res) => {
           return fail(res, 400, 'rel and title are required')
         }
         const result = await updateNote(draft.rel, draft, VAULT, scheduleCommit)
+        await reindexNote(draft.rel)
         return send(res, 200, result)
       }
       if (req.method === 'POST' && p === '/api/create') {
         const body = (await readJson(req)) as Record<string, unknown>
         if (typeof body.content === 'string' && body.rel) {
           await writeRaw(String(body.rel), body.content, VAULT, scheduleCommit)
+          await reindexNote(String(body.rel))
           return send(res, 200, { ok: true })
         }
         if (!body.title) {
           return fail(res, 400, 'title is required')
         }
         const result = await saveNotes([body as never], VAULT, scheduleCommit)
+        for (const saved of result.saved) {
+          await reindexNote(saved.relPath)
+        }
         return send(res, 200, result)
       }
       if (req.method === 'POST' && p === '/api/note') {
@@ -190,6 +213,7 @@ const server = createServer(async (req, res) => {
       if (req.method === 'POST' && p === '/api/delete') {
         const { rel } = (await readJson(req)) as { rel: string }
         await rm(sanitize(rel), { force: true })
+        getIndexStore().remove(rel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
@@ -211,6 +235,7 @@ const server = createServer(async (req, res) => {
         const to = sanitize(newRel)
         await mkdir(join(to, '..'), { recursive: true })
         await rename(from, to)
+        getIndexStore().rename(rel, newRel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
@@ -275,6 +300,10 @@ const server = createServer(async (req, res) => {
 if (require.main === module) {
   ensureRepo(VAULT, '').catch((e) => console.error('init failed', e))
   if (!existsSync(VAULT)) mkdir(VAULT, { recursive: true })
+  getIndexStore().open(VAULT)
+  getIndexStore()
+    .scan(VAULT)
+    .catch((e) => console.error('index scan failed', e))
   server.listen(PORT, () => {
     console.log(`jazz-notes-web on :${PORT}, vault=${VAULT}`)
   })
