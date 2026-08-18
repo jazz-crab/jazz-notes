@@ -5,6 +5,7 @@ import { t } from '../utils/i18n'
 import { useSettingsStore } from '../stores/settings'
 import { useSyncStore } from '../stores/sync'
 import { isInFolder, leafName, depthOf } from '../utils/folder'
+import { useIsMobile } from '../utils/useMedia'
 import Sidebar from '../components/Sidebar'
 import NoteCard from '../components/NoteCard'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -92,6 +93,8 @@ export default function NoteList({ onSelectNote }: Props) {
   const [menu, setMenu] = useState<{ x: number; y: number; note: Note } | null>(null)
   const [noteAction, setNoteAction] = useState<NoteAction>(null)
   const [movingNote, setMovingNote] = useState<Note | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -211,10 +214,26 @@ export default function NoteList({ onSelectNote }: Props) {
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div style={layoutStyle}>
-      <Sidebar />
+      {isMobile ? (
+        sidebarOpen && (
+          <div style={overlayStyle(colors)} onClick={() => setSidebarOpen(false)}>
+            <div style={mobileSidebarStyle(colors)} onClick={(e) => e.stopPropagation()}>
+              <Sidebar />
+              <button style={closeBtnStyle(colors)} onClick={() => setSidebarOpen(false)}>×</button>
+            </div>
+          </div>
+        )
+      ) : (
+        <Sidebar />
+      )}
       <div style={mainStyle}>
         <div style={topBarStyle}>
-          <NextDueTimer />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isMobile && (
+              <button style={hamburgerStyle(colors)} onClick={() => setSidebarOpen(true)}>{'\u2630'}</button>
+            )}
+            <NextDueTimer />
+          </div>
           <div style={{ position: 'relative' as const }}>
             <input
               style={searchStyle(colors)}
@@ -389,6 +408,46 @@ const layoutStyle: React.CSSProperties = {
   display: 'flex',
   height: '100%',
 }
+const hamburgerStyle = (c: any): React.CSSProperties => ({
+  width: 34,
+  height: 34,
+  borderRadius: 6,
+  border: `1px solid ${c.border}`,
+  background: c.bgAlt,
+  color: c.fg,
+  fontSize: 16,
+  cursor: 'pointer',
+  flexShrink: 0,
+})
+const overlayStyle = (c: any): React.CSSProperties => ({
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0, 0, 0, 0.5)',
+  zIndex: 2000,
+  display: 'flex',
+})
+const mobileSidebarStyle = (c: any): React.CSSProperties => ({
+  width: 260,
+  maxWidth: '85vw',
+  background: c.bg,
+  height: '100%',
+  overflowY: 'auto',
+  position: 'relative',
+})
+const closeBtnStyle = (c: any): React.CSSProperties => ({
+  position: 'absolute',
+  top: 8,
+  right: 8,
+  width: 28,
+  height: 28,
+  borderRadius: 6,
+  border: `1px solid ${c.border}`,
+  background: c.bgAlt,
+  color: c.fg,
+  fontSize: 16,
+  cursor: 'pointer',
+  zIndex: 10,
+})
 const mainStyle: React.CSSProperties = {
   flex: 1,
   display: 'flex',
