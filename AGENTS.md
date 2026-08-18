@@ -100,3 +100,4 @@ Every feature of the app must be reachable from the console — no function may 
 - Don't add code comments unless asked.
 - Follow the existing code style (existing components, zustand stores, i18n strings in Russian).
 - Don't commit build output (`out/`, `dist/`, `node_modules/`).
+- **Don't create PRs for yourself.** This is a solo project — just commit and push directly to `main`. PRs are only for external contributors.
