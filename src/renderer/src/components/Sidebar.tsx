@@ -18,6 +18,7 @@ export default function Sidebar() {
   const createFolder = useNotesStore((s) => s.createFolder)
   const renameFolder = useNotesStore((s) => s.renameFolder)
   const moveFolder = useNotesStore((s) => s.moveFolder)
+  const moveNote = useNotesStore((s) => s.moveNote)
   const deleteFolder = useNotesStore((s) => s.deleteFolder)
   const openSettings = useSettingsStore((s) => s.openSettings)
   const [showNewFolder, setShowNewFolder] = useState(false)
@@ -25,6 +26,7 @@ export default function Sidebar() {
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null)
   const [movingFolder, setMovingFolder] = useState<string | null>(null)
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState<string | null>(null)
 
   const filterItems: Array<{ type: SidebarSelection; label: string }> = [
     { type: { type: 'all' }, label: t('all.notes', lang) },
@@ -93,11 +95,26 @@ export default function Sidebar() {
             style={{
               ...itemStyle(colors),
               ...(isSelected({ type: 'folder', path: folder }) ? itemSelectedStyle(colors) : {}),
+              ...(dragOver === folder ? dragOverStyle(colors) : {}),
             }}
             onClick={() => setSidebarSelection({ type: 'folder', path: folder })}
             onContextMenu={(e) => {
               e.preventDefault()
               setMenu({ x: e.clientX, y: e.clientY, folder })
+            }}
+            onDragOver={(e) => {
+              if (e.dataTransfer.types.includes('application/x-jazz-note')) {
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'move'
+                setDragOver(folder)
+              }
+            }}
+            onDragLeave={() => setDragOver((cur) => (cur === folder ? null : cur))}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragOver(null)
+              const relPath = e.dataTransfer.getData('application/x-jazz-note')
+              if (relPath) void moveNote(relPath, folder)
             }}
           >
             <span style={{ ...folderNameStyle, paddingLeft: depthOf(folder) * 14 }}>
@@ -243,6 +260,11 @@ const itemSelectedStyle = (c: any) => ({
   background: c.bgHighlight,
   color: c.blue,
   fontWeight: 600,
+})
+const dragOverStyle = (c: any): React.CSSProperties => ({
+  outline: `1.5px dashed ${c.blue}`,
+  outlineOffset: -2,
+  background: c.bgHighlight,
 })
 const divider = (c: any) => ({
   height: 1,

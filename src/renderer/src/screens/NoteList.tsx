@@ -43,7 +43,17 @@ function NoteItem({ note, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }
     )
   }
 
-  return <NoteCard note={note} isActive={false} onClick={onOpen} onContextMenu={onContextMenu} />
+  return (
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('application/x-jazz-note', note.relPath)
+        e.dataTransfer.effectAllowed = 'move'
+      }}
+    >
+      <NoteCard note={note} isActive={false} onClick={onOpen} onContextMenu={onContextMenu} />
+    </div>
+  )
 }
 
 type NoteAction = { note: Note; action: 'rename' | 'date' | 'color' | 'delete' } | null
