@@ -23,7 +23,7 @@ Inspired by [Obsidian](https://obsidian.md): a plain-Markdown vault with inline 
 - **Full CRUD** — create, edit, delete notes and folders; **nested folders** at any depth
 - **Right-click menu** — on a note: rename, move to a folder, change date/color, delete; on a folder: rename, move (into another folder or to root), delete
 - **New note goes to the selected folder** — when a folder is active in the sidebar, new notes are created inside it; a new folder is created inside the selected one too. The vault root is selectable (named after the storage folder), so you can create notes and folders at the root level as well
-- **Search** — full-text over title and body, case-insensitive
+- **Search** — full-text via a SQLite FTS5 index (`.jazz/index.db` inside the vault, kept in sync on every change); instant results with snippet highlighting on both desktop and web
 - **Filters** — All / Today / Tomorrow / This week / Later / No date
 - **Sorting** — by last updated / created / due date
 - **Metadata** — title, due date, color, auto-assigned ID, created/updated timestamps; the note color highlights the card in the list and the **editor background/text**; a **folder pill badge** marks notes living inside a folder
