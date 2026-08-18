@@ -15,6 +15,9 @@ import Modal from '../components/Modal'
 import PromptDialog from '../components/PromptDialog'
 import DatePicker from '../components/DatePicker'
 import ColorPicker from '../components/ColorPicker'
+import { DndContext, useDraggable, useSensors, useSensor, PointerSensor, TouchSensor } from '@dnd-kit/core'
+import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import type React from 'react'
 
 interface Props {
@@ -30,6 +33,8 @@ interface NoteItemProps {
 }
 
 function NoteItem({ note, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: note.relPath })
+
   if (isDeleting) {
     return (
       <div
@@ -45,10 +50,13 @@ function NoteItem({ note, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }
 
   return (
     <div
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('application/x-jazz-note', note.relPath)
-        e.dataTransfer.effectAllowed = 'move'
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        opacity: isDragging ? 0.5 : 1,
+        touchAction: 'none',
       }}
     >
       <NoteCard note={note} isActive={false} onClick={onOpen} onContextMenu={onContextMenu} />
@@ -82,6 +90,19 @@ export default function NoteList({ onSelectNote }: Props) {
   const [menu, setMenu] = useState<{ x: number; y: number; note: Note } | null>(null)
   const [noteAction, setNoteAction] = useState<NoteAction>(null)
   const [movingNote, setMovingNote] = useState<Note | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  )
+
+  const onDragEnd = (e: DragEndEvent) => {
+    const over = e.over
+    if (!over) return
+    const relPath = String(e.active.id)
+    const folder = over.id === 'root' ? null : String(over.id)
+    void moveNote(relPath, folder)
+  }
 
   const handleDeleted = (relPath: string) => {
     deleteNote(relPath)
@@ -186,7 +207,8 @@ export default function NoteList({ onSelectNote }: Props) {
   ]
 
   return (
-    <div style={layoutStyle}>
+    <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+      <div style={layoutStyle}>
       <Sidebar />
       <div style={mainStyle}>
         <div style={topBarStyle}>
@@ -352,7 +374,8 @@ export default function NoteList({ onSelectNote }: Props) {
           />
         </Modal>
       )}
-    </div>
+      </div>
+    </DndContext>
   )
 }
 

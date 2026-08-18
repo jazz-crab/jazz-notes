@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDroppable } from '@dnd-kit/core'
 import { useNotesStore, type SidebarSelection } from '../stores/notes'
 import { useSettingsStore } from '../stores/settings'
 import { useColors } from '../theme'
@@ -9,6 +10,39 @@ import ConfirmDialog from './ConfirmDialog'
 import ContextMenu from './ContextMenu'
 import Modal from './Modal'
 
+function FolderRow({
+  folder,
+  colors,
+  selected,
+  onSelect,
+  onContextMenu,
+}: {
+  folder: string
+  colors: any
+  selected: boolean
+  onSelect: () => void
+  onContextMenu: (e: React.MouseEvent) => void
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: folder })
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...itemStyle(colors),
+        ...(selected ? itemSelectedStyle(colors) : {}),
+        ...(isOver ? dragOverStyle(colors) : {}),
+      }}
+      onClick={onSelect}
+      onContextMenu={onContextMenu}
+    >
+      <span style={{ ...folderNameStyle, paddingLeft: depthOf(folder) * 14 }}>
+        {"\u2514"} {leafName(folder)}
+      </span>
+    </div>
+  )
+}
+
 export default function Sidebar() {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
@@ -18,7 +52,6 @@ export default function Sidebar() {
   const createFolder = useNotesStore((s) => s.createFolder)
   const renameFolder = useNotesStore((s) => s.renameFolder)
   const moveFolder = useNotesStore((s) => s.moveFolder)
-  const moveNote = useNotesStore((s) => s.moveNote)
   const deleteFolder = useNotesStore((s) => s.deleteFolder)
   const openSettings = useSettingsStore((s) => s.openSettings)
   const [showNewFolder, setShowNewFolder] = useState(false)
@@ -26,7 +59,6 @@ export default function Sidebar() {
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null)
   const [movingFolder, setMovingFolder] = useState<string | null>(null)
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null)
-  const [dragOver, setDragOver] = useState<string | null>(null)
 
   const filterItems: Array<{ type: SidebarSelection; label: string }> = [
     { type: { type: 'all' }, label: t('all.notes', lang) },
@@ -90,37 +122,17 @@ export default function Sidebar() {
           <button style={addBtn(colors)} onClick={() => setShowNewFolder(true)}>+</button>
         </div>
         {sortedFolders.map((folder) => (
-          <div
+          <FolderRow
             key={folder}
-            style={{
-              ...itemStyle(colors),
-              ...(isSelected({ type: 'folder', path: folder }) ? itemSelectedStyle(colors) : {}),
-              ...(dragOver === folder ? dragOverStyle(colors) : {}),
-            }}
-            onClick={() => setSidebarSelection({ type: 'folder', path: folder })}
+            folder={folder}
+            colors={colors}
+            selected={isSelected({ type: 'folder', path: folder })}
+            onSelect={() => setSidebarSelection({ type: 'folder', path: folder })}
             onContextMenu={(e) => {
               e.preventDefault()
               setMenu({ x: e.clientX, y: e.clientY, folder })
             }}
-            onDragOver={(e) => {
-              if (e.dataTransfer.types.includes('application/x-jazz-note')) {
-                e.preventDefault()
-                e.dataTransfer.dropEffect = 'move'
-                setDragOver(folder)
-              }
-            }}
-            onDragLeave={() => setDragOver((cur) => (cur === folder ? null : cur))}
-            onDrop={(e) => {
-              e.preventDefault()
-              setDragOver(null)
-              const relPath = e.dataTransfer.getData('application/x-jazz-note')
-              if (relPath) void moveNote(relPath, folder)
-            }}
-          >
-            <span style={{ ...folderNameStyle, paddingLeft: depthOf(folder) * 14 }}>
-              {"\u2514"} {leafName(folder)}
-            </span>
-          </div>
+          />
         ))}
         {folders.length === 0 && (
           <div style={emptyText(colors)}>{t('no.folders', lang)}</div>
