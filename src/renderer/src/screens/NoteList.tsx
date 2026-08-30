@@ -79,6 +79,7 @@ export default function NoteList({ onSelectNote }: Props) {
   const searchLoading = useNotesStore((s) => s.searchLoading)
   const sortBy = useNotesStore((s) => s.sortBy)
   const loadNotes = useNotesStore((s) => s.loadNotes)
+  const vaultExists = useNotesStore((s) => s.vaultExists)
   const setSearchQuery = useNotesStore((s) => s.setSearchQuery)
   const setSortBy = useNotesStore((s) => s.setSortBy)
   const deleteNote = useNotesStore((s) => s.deleteNote)
@@ -195,6 +196,7 @@ export default function NoteList({ onSelectNote }: Props) {
   }
 
   const handleCreate = async (quick = false) => {
+    if (!vaultExists) return
     setNewTitle('')
     const relPath = await createNote(newTitle)
     if (relPath && !quick) onSelectNote(relPath)
@@ -265,13 +267,22 @@ export default function NoteList({ onSelectNote }: Props) {
         <div style={{ ...listStyle, ...(isMobile ? { padding: '6px 12px' } : {}) }}>
           {loading && <div style={loadingStyle(colors)}>{t('loading', lang)}</div>}
           {!loading && filtered.length === 0 && (
-            <div style={emptyStyle(colors)}>
-              {searchQuery && searchLoading
-                ? t('searching', lang)
-                : searchQuery
-                  ? t('no.results', lang)
-                  : t('no.notes', lang)}
-            </div>
+            !vaultExists ? (
+              <div style={{ ...emptyStyle(colors), whiteSpace: 'pre-line' }}>
+                {t('vault.missing', lang)}
+                <button style={vaultRetryBtnStyle(colors)} onClick={() => void loadNotes()}>
+                  {t('vault.retry', lang)}
+                </button>
+              </div>
+            ) : (
+              <div style={emptyStyle(colors)}>
+                {searchQuery && searchLoading
+                  ? t('searching', lang)
+                  : searchQuery
+                    ? t('no.results', lang)
+                    : t('no.notes', lang)}
+              </div>
+            )
           )}
           {filtered.map((note) => (
             <NoteItem
@@ -288,20 +299,22 @@ export default function NoteList({ onSelectNote }: Props) {
           ))}
         </div>
 
-        <div style={bottomBarStyle(colors)}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              style={newNoteInputStyle(colors)}
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder={t('new.note.placeholder', lang)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreate(e.ctrlKey || e.metaKey)
-              }}
-            />
-            <button style={createBtnStyle(colors)} onClick={(e) => handleCreate(e.ctrlKey || e.metaKey)}>{t('create', lang)}</button>
+        {vaultExists && (
+          <div style={bottomBarStyle(colors)}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                style={newNoteInputStyle(colors)}
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder={t('new.note.placeholder', lang)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreate(e.ctrlKey || e.metaKey)
+                }}
+              />
+              <button style={createBtnStyle(colors)} onClick={(e) => handleCreate(e.ctrlKey || e.metaKey)}>{t('create', lang)}</button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {menu && (
@@ -510,6 +523,16 @@ const emptyStyle = (c: any) => ({
   textAlign: 'center' as const,
   padding: 60,
   fontSize: 14,
+})
+const vaultRetryBtnStyle = (c: any) => ({
+  display: 'block',
+  margin: '16px auto 0',
+  padding: '8px 16px',
+  background: c.blue,
+  color: c.bg,
+  borderRadius: 6,
+  fontWeight: 700,
+  fontSize: 13,
 })
 const bottomBarStyle = (c: any) => ({
   padding: '8px 20px 12px',

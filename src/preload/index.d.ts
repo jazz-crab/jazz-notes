@@ -3,6 +3,7 @@ import type { NoteDraft, SavedNoteInfo } from '../shared/note'
 
 export interface JazzAPI {
   getPath: () => Promise<string>
+  vaultExists: () => Promise<boolean>
   readDirRecursive: (dirPath?: string) => Promise<string[]>
   readFile: (relPath: string, dirPath?: string) => Promise<string>
   writeFile: (relPath: string, content: string, dirPath?: string) => Promise<boolean>

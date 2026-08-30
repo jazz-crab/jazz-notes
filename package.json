@@ -10,6 +10,8 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "test": "vitest run",
+    "cli": "node dist/cli.js",
+    "cli:build": "esbuild src/cli/index.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --outfile=dist/cli.js",
     "postinstall": "electron-builder install-app-deps",
     "dist": "electron-vite build && electron-builder",
     "dist:all": "electron-vite build && electron-builder --linux --win && node -e \"const fs=require('fs'); try{fs.renameSync('dist/jazz-notes-linux-x64.pacman','dist/jazz-notes-linux-x86_64.pacman')}catch(e){}\"",

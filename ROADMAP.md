@@ -27,6 +27,7 @@ Legend: `[x] done · [ ] next · [~] deferred`
 ### Engineering
 - [x] **Tests + CI** — unit tests for the frontmatter parser, i18n, color, debounce, and fonts utilities (Vitest); a GitHub Actions workflow runs tests and the build on every push/PR.
 - [x] **Packaging + beta releases** — Linux (AppImage/deb/pacman) + Windows (NSIS); GitHub Actions builds and publishes releases with ready-to-download binaries on every `v*` tag.
+- [x] **Console-first CLI** — every core operation reachable from the terminal (`list/read/write/create/delete/mkdir/rmdir/mv/git*`), sharing the same typed core (`src/shared/service.ts`) as the Electron IPC and the web server. Tracks issue #7.
 
 ### Sync & versioning
 - [x] **Git-backed vault** — the notes folder is initialized as a git repository; every autosave (400 ms debounce) and settings change become commits.
@@ -42,6 +43,7 @@ Legend: `[x] done · [ ] next · [~] deferred`
 ### Web version
 - [x] **Web version** — the same UI runs in the browser (`web/`): a small Node.js server reuses the app's git and save logic against the same vault.
 - [x] **HTTP note intake** — `POST /api/note` creates notes from JSON guarded by a token (`X-Auth-Token` / `JAZZ_NOTE_TOKEN`); handy from a phone or curl.
+- [x] **Vault existence guard** — the web server and CLI require an explicit `JAZZ_VAULT` (no default): without it the server refuses to start and the CLI exits with an error; if the vault folder itself is missing the UI shows a message and blocks note creation until the folder is created.
 
 ## Later
 

@@ -47,6 +47,7 @@ export default function Sidebar() {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
   const folders = useNotesStore((s) => s.folders)
+  const vaultExists = useNotesStore((s) => s.vaultExists)
   const sidebarSelection = useNotesStore((s) => s.sidebarSelection)
   const setSidebarSelection = useNotesStore((s) => s.setSidebarSelection)
   const createFolder = useNotesStore((s) => s.createFolder)
@@ -119,7 +120,9 @@ export default function Sidebar() {
       <div style={section}>
         <div style={sectionHeader(colors)}>
           <span>{t('folders', lang)}</span>
-          <button style={addBtn(colors)} onClick={() => setShowNewFolder(true)}>+</button>
+          {vaultExists && (
+            <button style={addBtn(colors)} onClick={() => setShowNewFolder(true)}>+</button>
+          )}
         </div>
         {sortedFolders.map((folder) => (
           <FolderRow

@@ -59,6 +59,7 @@ Second Brain — локальное приложение для заметок �
 | Редактирование | CodeMirror 6 через `@atomic-editor/editor` |
 | Сборка | electron-vite, electron-builder |
 | Слежение | chokidar |
+| Консоль | TypeScript CLI (`node dist/cli.js`), общее ядро в `src/shared/service.ts` |
 
 ## Запуск
 
@@ -82,7 +83,7 @@ npm run test
 
 ## Как хранятся заметки
 
-Заметки — обычные `.md`-файлы в хранилище, при желании во вложенных папках. Каждый файл несёт небольшой frontmatter-блок:
+Заметки — обычные `.md`-файлы в хранилище (путь задаётся в настройках приложения или через `JAZZ_VAULT` для CLI/web), при желании во вложенных папках. Каждый файл несёт небольшой frontmatter-блок:
 
 ```
 ~/Documents/jazz-notes-vault/
@@ -125,9 +126,11 @@ npm run web:preview # предпросмотр собранного клиент
 
 | Переменная | По умолчанию | Назначение |
 |------------|-------------|------------|
-| `JAZZ_VAULT` | `~/jazz-notes-vault` | Путь к хранилищу заметок |
+| `JAZZ_VAULT` | нет (обязателен) | Путь к папке заметок. **Обязателен** — без него сервер не стартует. |
 | `PORT` | `3180` | HTTP-порт |
 | `JAZZ_WEB_ROOT` | `web/dist` | Корень статического клиента |
+
+В отличие от десктопного приложения, сервер **не** создаёт хранилище автоматически: если папка `JAZZ_VAULT` не существует, UI показывает сообщение «Папка заметок не найдена» и блокирует создание заметок, пока папка не появится или `JAZZ_VAULT` не будет указывать на существующую директорию.
 
 ### Приём заметок по HTTP
 
@@ -156,10 +159,51 @@ cd jazz-notes-web-<версия>
 Ручной запуск (любой хост с Node.js):
 
 ```bash
-export JAZZ_VAULT=~/jazz-notes-vault
+export JAZZ_VAULT=/home/user/Documents/jazz-notes-vault   # обязателен, абсолютный путь
 export JAZZ_NOTE_TOKEN=<секрет>
 node server.js   # слушает PORT (по умолчанию 3180)
 ```
+
+## CLI и автоматизация
+
+Любая ключевая операция приложения доступна из терминала. CLI — это тонкий адаптер над тем же общим ядром (`src/shared/service.ts`), которое используют Electron IPC и веб-сервер, поэтому формат заметок, ID и git-поведение одинаковы в desktop, web и консоли.
+
+Сборка и запуск CLI:
+
+```bash
+npm run cli:build       # собирает src/cli/index.ts в dist/cli.js
+npm run cli path        # npm run cli == node dist/cli.js
+node dist/cli.js list   # или запускай бандл напрямую
+```
+
+| Команда | Описание |
+|---------|----------|
+| `path` | Вывести путь к хранилищу |
+| `list` | Список заметок как `relPath<TAB>title` |
+| `read <rel>` | Вывести сырой текст заметки |
+| `write <rel> [--content <t>]` | Записать сырой текст; если `--content` не указан — читает stdin |
+| `create <title> [--text <t>] [--folder <f>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>]` | Создать заметку; печатает её относительный путь |
+| `delete <rel>` | Удалить файл |
+| `mkdir <rel>` | Создать директорию |
+| `rmdir <rel>` | Удалить директорию рекурсивно |
+| `mv <from> <to>` | Переименовать / переместить внутри хранилища |
+| `git commit [--message <m>]` | Закоммитить изменения (по умолчанию `autosave`) |
+| `git sync [--user <u>] [--password <p>]` | Push / pull против настроенного remote |
+| `git history [--rel <rel>] [--limit <n>]` | Показать git-историю |
+| `git show <rel> <hash>` | Показать файл в заданном коммите |
+| `git restore <rel> <hash>` | Восстановить версию файла (новый коммит) |
+
+Примеры:
+
+```bash
+node dist/cli.js path
+node dist/cli.js list
+node dist/cli.js create "Быстрая заметка" --text "тело" --folder inbox --due 2026-08-15 --color red --priority 2 --tags работа,jazz
+node dist/cli.js write 00002.md --content "# Заголовок\nТекст"
+node dist/cli.js git commit --message "wip"
+```
+
+`JAZZ_VAULT` обязателен: без него CLI печатает ошибку в stderr и завершается с кодом 1. Передавай абсолютный путь (Node не раскрывает `~`). Как и веб-сервер, CLI не создаёт хранилище автоматически. Отдельный скомпилированный бинарник CLI — в планах (issue #37).
 
 ## Roadmap
 

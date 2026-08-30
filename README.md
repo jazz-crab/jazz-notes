@@ -59,6 +59,7 @@ Inspired by [Obsidian](https://obsidian.md): a plain-Markdown vault with inline 
 | Editing | CodeMirror 6 via `@atomic-editor/editor` |
 | Build | electron-vite, electron-builder |
 | Watching | chokidar |
+| Console | TypeScript CLI (`node dist/cli.js`), shared core in `src/shared/service.ts` |
 
 ## Getting started
 
@@ -82,7 +83,7 @@ npm run test
 
 ## How notes are stored
 
-Notes are plain `.md` files in the vault, optionally nested in folders. Each file carries a small frontmatter block:
+Notes are plain `.md` files in the vault (the path is chosen in Settings or via `JAZZ_VAULT` for CLI/web), optionally nested in folders. Each file carries a small frontmatter block:
 
 ```
 ~/Documents/jazz-notes-vault/
@@ -125,9 +126,11 @@ The server (run with `node web/dist-server/server.js`) exposes the vault via the
 
 | Var | Default | Meaning |
 |-----|---------|---------|
-| `JAZZ_VAULT` | `~/jazz-notes-vault` | Path to the notes vault |
+| `JAZZ_VAULT` | none (required) | Path to the notes vault. **Required** — the server refuses to start without it. |
 | `PORT` | `3180` | HTTP port |
 | `JAZZ_WEB_ROOT` | `web/dist` | Static client root |
+
+Unlike the desktop app, the server does **not** auto-create the vault: if the `JAZZ_VAULT` folder does not exist, the UI shows a «Notes folder not found» message and blocks note creation until the folder is created or `JAZZ_VAULT` points to an existing directory.
 
 ### Receiving notes over HTTP
 
@@ -156,10 +159,51 @@ cd jazz-notes-web-<version>
 Manual run (any host with Node.js):
 
 ```bash
-export JAZZ_VAULT=~/jazz-notes-vault
+export JAZZ_VAULT=/home/user/Documents/jazz-notes-vault   # required, absolute path
 export JAZZ_NOTE_TOKEN=<secret>
 node server.js   # listens on PORT (default 3180)
 ```
+
+## CLI & automation
+
+Every core operation of the app is reachable from the terminal. The CLI is a thin adapter over the same shared core (`src/shared/service.ts`) that the Electron IPC and the web server use, so the note format, IDs and git behavior are identical across desktop, web and console.
+
+Build the CLI bundle and run it:
+
+```bash
+npm run cli:build       # bundles src/cli/index.ts into dist/cli.js
+npm run cli path        # npm run cli == node dist/cli.js
+node dist/cli.js list   # or invoke the bundle directly
+```
+
+| Command | Description |
+|---------|-------------|
+| `path` | Print the vault path |
+| `list` | List notes as `relPath<TAB>title` |
+| `read <rel>` | Print a note's raw content |
+| `write <rel> [--content <t>]` | Write raw content; reads stdin if `--content` is omitted |
+| `create <title> [--text <t>] [--folder <f>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>]` | Create a note; prints its relative path |
+| `delete <rel>` | Delete a file |
+| `mkdir <rel>` | Create a directory |
+| `rmdir <rel>` | Remove a directory recursively |
+| `mv <from> <to>` | Rename / move within the vault |
+| `git commit [--message <m>]` | Commit changes (default message `autosave`) |
+| `git sync [--user <u>] [--password <p>]` | Push / pull against the configured remote |
+| `git history [--rel <rel>] [--limit <n>]` | Show git history |
+| `git show <rel> <hash>` | Show a file at a given commit |
+| `git restore <rel> <hash>` | Restore a file version (new commit) |
+
+Examples:
+
+```bash
+node dist/cli.js path
+node dist/cli.js list
+node dist/cli.js create "Quick note" --text "body" --folder inbox --due 2026-08-15 --color red --priority 2 --tags work,jazz
+node dist/cli.js write 00002.md --content "# Title\nBody"
+node dist/cli.js git commit --message "wip"
+```
+
+`JAZZ_VAULT` is required: without it the CLI prints an error to stderr and exits with code 1. Pass an absolute path (Node does not expand `~`). Like the web server, the CLI does not auto-create the vault. A standalone compiled binary for the CLI is planned (issue #37).
 
 ## Roadmap
 

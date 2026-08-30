@@ -71,6 +71,7 @@ interface NotesState {
   loading: boolean
   notesPath: string
   dirtyNotes: Set<string>
+  vaultExists: boolean
 
   setNotesPath: (path: string) => void
   loadNotes: () => Promise<void>
@@ -107,44 +108,55 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   loading: false,
   notesPath: '',
   dirtyNotes: new Set(),
+  vaultExists: true,
 
   setNotesPath: (path: string) => set({ notesPath: path }),
 
   loadNotes: async () => {
-    const hasNotes = get().notes.length > 0
-    if (!hasNotes) set({ loading: true })
-    const saved = useSettingsStore.getState().notesPath
-    const path = saved || await window.jazz.getPath()
-    if (!saved) useSettingsStore.getState().setNotesPath(path)
-    set({ notesPath: path })
-    const entries = await window.jazz.readDirRecursive(path)
-    const notes: Note[] = []
-    const folders: string[] = []
-    for (const entry of entries) {
-      if (entry.endsWith('/')) {
-        folders.push(entry.slice(0, -1))
-      } else {
-        const raw = await window.jazz.readFile(entry, path)
-        const data = parseNote(raw)
-        notes.push({
-          relPath: entry,
-          title: data.meta.title,
-          meta: data.meta,
-          content: raw,
-          body: data.content,
-        })
+    try {
+      const hasNotes = get().notes.length > 0
+      if (!hasNotes) set({ loading: true })
+      const saved = useSettingsStore.getState().notesPath
+      const path = saved || await window.jazz.getPath()
+      if (!saved) useSettingsStore.getState().setNotesPath(path)
+      set({ notesPath: path })
+      const exists = await window.jazz.vaultExists()
+      if (!exists) {
+        set({ notes: [], folders: [], loading: false, vaultExists: false })
+        return
       }
-    }
-    for (const note of notes) {
-      if (!note.meta.id) {
-        const id = computeAndStoreNextId(notes)
-        note.meta = { ...note.meta, id }
-        note.title = note.meta.title
-        await window.jazz.writeFile(note.relPath, serializeNote(note.meta, note.body), path)
+      const entries = await window.jazz.readDirRecursive(path)
+      const notes: Note[] = []
+      const folders: string[] = []
+      for (const entry of entries) {
+        if (entry.endsWith('/')) {
+          folders.push(entry.slice(0, -1))
+        } else {
+          const raw = await window.jazz.readFile(entry, path)
+          const data = parseNote(raw)
+          notes.push({
+            relPath: entry,
+            title: data.meta.title,
+            meta: data.meta,
+            content: raw,
+            body: data.content,
+          })
+        }
       }
+      for (const note of notes) {
+        if (!note.meta.id) {
+          const id = computeAndStoreNextId(notes)
+          note.meta = { ...note.meta, id }
+          note.title = note.meta.title
+          await window.jazz.writeFile(note.relPath, serializeNote(note.meta, note.body), path)
+        }
+      }
+      set({ notes, folders, loading: false, vaultExists: true })
+      void window.jazz.indexInit(path)
+    } catch (e) {
+      set({ loading: false })
+      throw e
     }
-    set({ notes, folders, loading: false })
-    void window.jazz.indexInit(path)
   },
 
   setCurrentNote: async (relPath: string | null) => {
@@ -217,6 +229,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   createNote: async (title: string, onCreated?: (relPath: string) => void) => {
+    if (!get().vaultExists) return ''
     const { notesPath, notes, sidebarSelection } = get()
     const folder = sidebarSelection.type === 'folder' ? sidebarSelection.path : ''
     const finalTitle = title.trim() || `#${computeAndStoreNextId(notes)}`
@@ -337,6 +350,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   createFolder: async (name: string) => {
+    if (!get().vaultExists) return
     const n = name.trim().replace(/[/\\]/g, '')
     if (!n) return
     const { notesPath, sidebarSelection } = get()

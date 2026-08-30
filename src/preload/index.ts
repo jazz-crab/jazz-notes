@@ -4,6 +4,7 @@ import type { NoteDraft, SavedNoteInfo } from '../shared/note'
 
 const api = {
   getPath: (): Promise<string> => ipcRenderer.invoke('notes:getPath'),
+  vaultExists: (): Promise<boolean> => ipcRenderer.invoke('notes:vaultExists'),
   readDirRecursive: (dirPath?: string): Promise<string[]> =>
     ipcRenderer.invoke('notes:readDirRecursive', dirPath),
   readFile: (relPath: string, dirPath?: string): Promise<string> =>

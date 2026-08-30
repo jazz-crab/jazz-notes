@@ -4,6 +4,7 @@ import type { NoteDraft, SavedNoteInfo } from '../shared/note'
 
 interface ApiResponse {
   path?: string
+  exists?: boolean
   rev?: number
   entries?: string[]
   content?: string | null
@@ -55,6 +56,11 @@ export function installWebJazz() {
     getPath: async () => {
       const { path } = await call<ApiResponse>('/path')
       return path || '/vault'
+    },
+
+    vaultExists: async () => {
+      const { exists } = await call<ApiResponse>('/vault')
+      return !!exists
     },
 
     readDirRecursive: async () => {

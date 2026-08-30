@@ -1,24 +1,18 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
-import { readFile, mkdir, rm, rename, readdir } from 'fs/promises'
+import { readFile, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
-import { join, resolve, sep, relative } from 'path'
-import {
-  ensureRepo,
-  commitAll,
-  sync as gitSync,
-  resolveConflicts as gitResolveConflicts,
-  history as gitHistory,
-  show as gitShow,
-  restore as gitRestore,
-  type SyncResult,
-  type GitCommitInfo,
-  type GitAuth,
-} from '../src/main/git'
-import { saveNotes, updateNote, writeRaw } from '../src/main/save'
-import { parseNote } from '../src/shared/note'
+import { join, resolve, sep } from 'path'
+import * as svc from '../src/shared/service'
+import { parseNote, type NoteDraft } from '../src/shared/note'
 import { getIndexStore } from './index-store-web'
 import { handleNotePost } from './note-receiver'
-const VAULT = process.env.JAZZ_VAULT || join(process.env.HOME || '/home/jc', 'jazz-notes-vault')
+const VAULT = process.env.JAZZ_VAULT || ''
+if (!VAULT) {
+  console.error(
+    'JAZZ_VAULT is not set. Point it at your notes folder, e.g. JAZZ_VAULT=/home/user/Documents/jazz-notes-vault node web/dist-server/server.js'
+  )
+  process.exit(1)
+}
 const HISTORY_PATH = join(process.env.HOME || '/home/jc', '.jazz-notes-web-history.json')
 const PORT = Number(process.env.PORT || 3180)
 const ROOT =
@@ -34,7 +28,7 @@ function scheduleCommit() {
   if (commitTimer) clearTimeout(commitTimer)
   commitTimer = setTimeout(() => {
     commitTimer = null
-    commitAll(VAULT).catch(() => {})
+    svc.gitCommit(VAULT).catch(() => {})
   }, 30000)
 }
 
@@ -45,10 +39,6 @@ function sanitize(relPath: string): string {
     throw new Error('bad path')
   }
   return full
-}
-
-function relOf(full: string): string {
-  return relative(VAULT, full).split(sep).join('/')
 }
 
 async function reindexNote(relPath: string) {
@@ -77,26 +67,6 @@ function send(res: ServerResponse, code: number, body: unknown) {
 
 function fail(res: ServerResponse, code: number, msg: string) {
   send(res, code, { error: msg })
-}
-
-async function readDirRecursive(): Promise<string[]> {
-  const result: string[] = []
-  async function walk(dir: string, prefix: string) {
-    const entries = await readdir(dir, { withFileTypes: true })
-    for (const entry of entries) {
-      if (entry.name.startsWith('.')) continue
-      const rel = prefix ? `${prefix}/${entry.name}` : entry.name
-      if (entry.isDirectory()) {
-        await walk(join(dir, entry.name), rel)
-        result.push(rel + '/')
-      } else if (entry.isFile() && entry.name.endsWith('.md')) {
-        result.push(rel)
-      }
-    }
-  }
-  if (!existsSync(VAULT)) await mkdir(VAULT, { recursive: true })
-  await walk(VAULT, '')
-  return result
 }
 
 async function readHistory(): Promise<Record<string, unknown>> {
@@ -150,15 +120,18 @@ const server = createServer(async (req, res) => {
       if (req.method === 'GET' && p === '/api/path') {
         return send(res, 200, { path: VAULT })
       }
+      if (req.method === 'GET' && p === '/api/vault') {
+        return send(res, 200, { path: VAULT, exists: existsSync(VAULT) })
+      }
       if (req.method === 'GET' && p === '/api/rev') {
         return send(res, 200, { rev })
       }
       if (req.method === 'GET' && p === '/api/tree') {
-        return send(res, 200, { entries: await readDirRecursive() })
+        return send(res, 200, { entries: await svc.readDirRecursive(VAULT) })
       }
       if (req.method === 'GET' && p === '/api/read') {
         const rel = q.get('rel') || ''
-        return send(res, 200, { content: await readFile(sanitize(rel), 'utf-8') })
+        return send(res, 200, { content: await svc.readFile(VAULT, rel) })
       }
       if (req.method === 'GET' && p.startsWith('/api/search')) {
         const searchQ = url.searchParams.get('q') || ''
@@ -171,7 +144,7 @@ const server = createServer(async (req, res) => {
       if (req.method === 'POST' && p === '/api/write') {
         const body = (await readJson(req)) as Record<string, unknown>
         if (typeof body.content === 'string' && body.rel) {
-          await writeRaw(String(body.rel), body.content, VAULT, scheduleCommit)
+          await svc.writeRaw(VAULT, String(body.rel), body.content, scheduleCommit)
           await reindexNote(String(body.rel))
           return send(res, 200, { ok: true })
         }
@@ -187,54 +160,49 @@ const server = createServer(async (req, res) => {
         if (!draft.rel || !draft.title) {
           return fail(res, 400, 'rel and title are required')
         }
-        const result = await updateNote(draft.rel, draft, VAULT, scheduleCommit)
+        const saved = await svc.updateNote(VAULT, draft.rel, draft, scheduleCommit)
         await reindexNote(draft.rel)
-        return send(res, 200, result)
+        return send(res, 200, { saved: [saved] })
       }
       if (req.method === 'POST' && p === '/api/create') {
         const body = (await readJson(req)) as Record<string, unknown>
         if (typeof body.content === 'string' && body.rel) {
-          await writeRaw(String(body.rel), body.content, VAULT, scheduleCommit)
+          await svc.writeRaw(VAULT, String(body.rel), body.content, scheduleCommit)
           await reindexNote(String(body.rel))
           return send(res, 200, { ok: true })
         }
         if (!body.title) {
           return fail(res, 400, 'title is required')
         }
-        const result = await saveNotes([body as never], VAULT, scheduleCommit)
-        for (const saved of result.saved) {
-          await reindexNote(saved.relPath)
-        }
-        return send(res, 200, result)
+        const saved = await svc.createNote(VAULT, body as NoteDraft, scheduleCommit)
+        await reindexNote(saved.relPath)
+        return send(res, 200, { saved: [saved] })
       }
       if (req.method === 'POST' && p === '/api/note') {
         return handleNotePost(req, res, VAULT, scheduleCommit)
       }
       if (req.method === 'POST' && p === '/api/delete') {
         const { rel } = (await readJson(req)) as { rel: string }
-        await rm(sanitize(rel), { force: true })
+        await svc.deleteFile(VAULT, rel)
         getIndexStore().remove(rel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/mkdir') {
         const { rel } = (await readJson(req)) as { rel: string }
-        await mkdir(sanitize(rel), { recursive: true })
+        await svc.mkdir(VAULT, rel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/rmdir') {
         const { rel } = (await readJson(req)) as { rel: string }
-        await rm(sanitize(rel), { recursive: true, force: true })
+        await svc.rmdir(VAULT, rel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/rename') {
         const { rel, newRel } = (await readJson(req)) as { rel: string; newRel: string }
-        const from = sanitize(rel)
-        const to = sanitize(newRel)
-        await mkdir(join(to, '..'), { recursive: true })
-        await rename(from, to)
+        await svc.renameFile(VAULT, rel, newRel)
         getIndexStore().rename(rel, newRel)
         scheduleCommit()
         return send(res, 200, { ok: true })
@@ -246,44 +214,44 @@ const server = createServer(async (req, res) => {
       }
       if (req.method === 'POST' && p === '/api/git/ensure') {
         const { remote } = (await readJson(req)) as { remote: string }
-        await ensureRepo(VAULT, remote)
+        await svc.gitEnsure(VAULT, remote)
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/git/commit') {
         const { message } = (await readJson(req)) as { message?: string }
-        const ok = await commitAll(VAULT, message || 'autosave')
+        const ok = await svc.gitCommit(VAULT, message || 'autosave')
         return send(res, 200, { ok })
       }
       if (req.method === 'POST' && p === '/api/git/sync') {
-        const { auth } = (await readJson(req)) as { auth?: GitAuth }
-        const result: SyncResult = await gitSync(VAULT, auth)
+        const { auth } = (await readJson(req)) as { auth?: svc.GitAuth }
+        const result: svc.SyncResult = await svc.gitSync(VAULT, auth)
         rev++
         return send(res, 200, result)
       }
       if (req.method === 'POST' && p === '/api/git/resolve') {
         const { picks, auth } = (await readJson(req)) as {
           picks: Array<{ file: string; source: 'local' | 'remote' }>
-          auth?: GitAuth
+          auth?: svc.GitAuth
         }
-        const result: SyncResult = await gitResolveConflicts(VAULT, picks, auth)
+        const result: svc.SyncResult = await svc.gitResolveConflicts(VAULT, picks, auth)
         rev++
         return send(res, 200, result)
       }
       if (req.method === 'GET' && p === '/api/git/history') {
         const rel = q.get('rel') || ''
         const limit = Number(q.get('limit')) || 50
-        const items: GitCommitInfo[] = await gitHistory(VAULT, rel, limit)
+        const items: svc.GitCommitInfo[] = await svc.gitHistory(VAULT, rel, limit)
         return send(res, 200, { items })
       }
       if (req.method === 'GET' && p === '/api/git/show') {
         const rel = q.get('rel') || ''
         const hash = q.get('hash') || ''
-        const content = await gitShow(VAULT, rel, hash)
+        const content = await svc.gitShow(VAULT, rel, hash)
         return send(res, 200, { content })
       }
       if (req.method === 'POST' && p === '/api/git/restore') {
         const { rel, hash } = (await readJson(req)) as { rel: string; hash: string }
-        const content = await gitRestore(VAULT, rel, hash)
+        const content = await svc.gitRestore(VAULT, rel, hash)
         rev++
         return send(res, 200, { content })
       }
@@ -298,12 +266,13 @@ const server = createServer(async (req, res) => {
 })
 
 if (require.main === module) {
-  ensureRepo(VAULT, '').catch((e) => console.error('init failed', e))
-  if (!existsSync(VAULT)) mkdir(VAULT, { recursive: true })
-  getIndexStore().open(VAULT)
-  getIndexStore()
-    .scan(VAULT)
-    .catch((e) => console.error('index scan failed', e))
+  if (existsSync(VAULT)) {
+    svc.gitEnsure(VAULT, '').catch((e) => console.error('init failed', e))
+    getIndexStore().open(VAULT)
+    getIndexStore()
+      .scan(VAULT)
+      .catch((e) => console.error('index scan failed', e))
+  }
   server.listen(PORT, () => {
     console.log(`jazz-notes-web on :${PORT}, vault=${VAULT}`)
   })

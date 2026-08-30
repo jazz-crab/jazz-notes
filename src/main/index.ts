@@ -1,21 +1,9 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, session } from 'electron'
 import { join } from 'path'
-import { readdir, readFile, writeFile, unlink, mkdir, rm, rename } from 'fs/promises'
+import { readFile, writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { watch } from 'chokidar'
-import {
-  ensureRepo,
-  commitAll,
-  sync as gitSync,
-  resolveConflicts as gitResolveConflicts,
-  history as gitHistory,
-  show as gitShow,
-  restore as gitRestore,
-  type SyncResult,
-  type GitCommitInfo,
-  type GitAuth,
-} from './git'
-import { saveNotes, updateNote } from './save'
+import * as svc from '../shared/service'
 import { getIndexStore } from './index-store'
 
 let mainWindow: BrowserWindow | null = null
@@ -29,7 +17,7 @@ function scheduleCommit(repoDir: string) {
   if (commitTimer) clearTimeout(commitTimer)
   commitTimer = setTimeout(() => {
     commitTimer = null
-    commitAll(repoDir).catch(() => {})
+    svc.gitCommit(repoDir).catch(() => {})
   }, 300)
 }
 
@@ -92,51 +80,49 @@ function registerIpc() {
     return join(p, 'jazz-notes-vault')
   })
 
+  ipcMain.handle('notes:vaultExists', () => {
+    const dir = getDefaultNotesPath()
+    return existsSync(dir)
+  })
+
   ipcMain.handle('notes:readFile', async (_event, relPath: string, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const fullPath = join(notesPath, relPath)
-    const content = await readFile(fullPath, 'utf-8')
-    return content
+    return svc.readFile(notesPath, relPath)
   })
 
   ipcMain.handle('notes:writeFile', async (_event, relPath: string, content: string, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const fullPath = join(notesPath, relPath)
     await ensureNotesDir(notesPath)
-    await writeFile(fullPath, content, 'utf-8')
+    await svc.writeRaw(notesPath, relPath, content)
     scheduleCommit(notesPath)
     return true
   })
 
   ipcMain.handle('notes:deleteFile', async (_event, relPath: string, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const fullPath = join(notesPath, relPath)
-    await unlink(fullPath)
+    await svc.deleteFile(notesPath, relPath)
     getIndexStore().remove(relPath)
     return true
   })
 
   ipcMain.handle('notes:createFile', async (_event, relPath: string, content: string, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const fullPath = join(notesPath, relPath)
     await ensureNotesDir(notesPath)
-    await writeFile(fullPath, content, 'utf-8')
+    await svc.writeRaw(notesPath, relPath, content)
     scheduleCommit(notesPath)
     return true
   })
 
   ipcMain.handle('notes:createDir', async (_event, relPath: string, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const fullPath = join(notesPath, relPath)
-    await mkdir(fullPath, { recursive: true })
+    await svc.mkdir(notesPath, relPath)
     scheduleCommit(notesPath)
     return true
   })
 
   ipcMain.handle('notes:deleteDir', async (_event, relPath: string, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const fullPath = join(notesPath, relPath)
-    await rm(fullPath, { recursive: true, force: true })
+    await svc.rmdir(notesPath, relPath)
     getIndexStore().scan(notesPath)
     scheduleCommit(notesPath)
     return true
@@ -144,11 +130,8 @@ function registerIpc() {
 
   ipcMain.handle('notes:rename', async (_event, relPath: string, newRelPath: string, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const fullPath = join(notesPath, relPath)
-    const newFullPath = join(notesPath, newRelPath)
     await ensureNotesDir(notesPath)
-    await mkdir(join(newFullPath, '..'), { recursive: true })
-    await rename(fullPath, newFullPath)
+    await svc.renameFile(notesPath, relPath, newRelPath)
     getIndexStore().rename(relPath, newRelPath)
     scheduleCommit(notesPath)
     return true
@@ -158,23 +141,7 @@ function registerIpc() {
     const notesPath = dirPath || getDefaultNotesPath()
     await ensureNotesDir(notesPath)
     startWatching(notesPath)
-
-    const result: string[] = []
-    async function walk(dir: string, prefix: string) {
-      const entries = await readdir(dir, { withFileTypes: true })
-      for (const entry of entries) {
-        if (entry.name.startsWith('.')) continue
-        const rel = prefix ? `${prefix}/${entry.name}` : entry.name
-        if (entry.isDirectory()) {
-          await walk(join(dir, entry.name), rel)
-          result.push(rel + '/')
-        } else if (entry.isFile() && entry.name.endsWith('.md')) {
-          result.push(rel)
-        }
-      }
-    }
-    await walk(notesPath, '')
-    return result
+    return svc.readDirRecursive(notesPath)
   })
 
   ipcMain.handle('index:init', async (_e, dirPath?: string) => {
@@ -218,27 +185,25 @@ function registerIpc() {
 
   ipcMain.handle('notes:createNoteDraft', async (_event, draft, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const result = await saveNotes([draft], notesPath, () => scheduleCommit(notesPath))
-    return result.saved[0]
+    return svc.createNote(notesPath, draft, () => scheduleCommit(notesPath))
   })
 
   ipcMain.handle('notes:updateNoteDraft', async (_event, relPath: string, draft, dirPath?: string) => {
     const notesPath = dirPath || getDefaultNotesPath()
-    const result = await updateNote(relPath, draft, notesPath, () => scheduleCommit(notesPath))
-    return result.saved[0]
+    return svc.updateNote(notesPath, relPath, draft, () => scheduleCommit(notesPath))
   })
 
   ipcMain.handle('git:ensure', async (_event, repoDir: string, remoteUrl: string) => {
-    await ensureRepo(repoDir, remoteUrl)
+    await svc.gitEnsure(repoDir, remoteUrl)
     return true
   })
 
   ipcMain.handle('git:commit', async (_event, repoDir: string, message?: string) => {
-    return commitAll(repoDir, message)
+    return svc.gitCommit(repoDir, message)
   })
 
-  ipcMain.handle('git:sync', async (_event, repoDir: string, auth?: GitAuth): Promise<SyncResult> => {
-    return gitSync(repoDir, auth)
+  ipcMain.handle('git:sync', async (_event, repoDir: string, auth?: svc.GitAuth): Promise<svc.SyncResult> => {
+    return svc.gitSync(repoDir, auth)
   })
 
   ipcMain.handle(
@@ -247,22 +212,22 @@ function registerIpc() {
       _event,
       repoDir: string,
       picks: Array<{ file: string; source: 'local' | 'remote' }>,
-      auth?: GitAuth
-    ): Promise<SyncResult> => {
-      return gitResolveConflicts(repoDir, picks, auth)
+      auth?: svc.GitAuth
+    ): Promise<svc.SyncResult> => {
+      return svc.gitResolveConflicts(repoDir, picks, auth)
     }
   )
 
-  ipcMain.handle('git:history', async (_event, repoDir: string, relPath: string, limit?: number): Promise<GitCommitInfo[]> => {
-    return gitHistory(repoDir, relPath, limit)
+  ipcMain.handle('git:history', async (_event, repoDir: string, relPath: string, limit?: number): Promise<svc.GitCommitInfo[]> => {
+    return svc.gitHistory(repoDir, relPath, limit)
   })
 
   ipcMain.handle('git:show', async (_event, repoDir: string, relPath: string, hash: string): Promise<string | null> => {
-    return gitShow(repoDir, relPath, hash)
+    return svc.gitShow(repoDir, relPath, hash)
   })
 
   ipcMain.handle('git:restore', async (_event, repoDir: string, relPath: string, hash: string): Promise<string | null> => {
-    return gitRestore(repoDir, relPath, hash)
+    return svc.gitRestore(repoDir, relPath, hash)
   })
 }
 
