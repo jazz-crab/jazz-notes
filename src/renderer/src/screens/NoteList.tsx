@@ -23,19 +23,21 @@ import { CSS } from '@dnd-kit/utilities'
 import type React from 'react'
 
 interface Props {
+  isVisible: boolean
   onSelectNote: (relPath: string) => void
 }
 
 interface NoteItemProps {
   note: Note
   isDeleting: boolean
+  isActive: boolean
   isLastOpened: boolean
   onOpen: () => void
   onContextMenu: (e: React.MouseEvent) => void
   onDeleteConfirmed: () => void
 }
 
-function NoteItem({ note, isDeleting, isLastOpened, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
+function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: note.relPath })
   const confirmedRef = useRef(false)
 
@@ -59,20 +61,21 @@ function NoteItem({ note, isDeleting, isLastOpened, onOpen, onContextMenu, onDel
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      {...(isActive ? { 'data-active': 'true' } : {})}
       style={{
         transform: CSS.Transform.toString(transform),
         opacity: isDragging ? 0.5 : 1,
         touchAction: 'none',
       }}
     >
-      <NoteCard note={note} isActive={false} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />
+      <NoteCard note={note} isActive={isActive} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />
     </div>
   )
 }
 
 type NoteAction = { note: Note; action: 'rename' | 'date' | 'color' | 'delete' } | null
 
-export default function NoteList({ onSelectNote }: Props) {
+export default function NoteList({ isVisible, onSelectNote }: Props) {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
   const showDone = useSettingsStore((s) => s.showDone)
@@ -100,6 +103,9 @@ export default function NoteList({ onSelectNote }: Props) {
   const [movingNote, setMovingNote] = useState<Note | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobile()
 
   const sensors = useSensors(
@@ -138,6 +144,44 @@ export default function NoteList({ onSelectNote }: Props) {
     })
     return unsub
   }, [])
+
+  useEffect(() => {
+    if (!isVisible) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
+      if (e.key === 'n') {
+        e.preventDefault()
+        setShowCreate(true)
+        return
+      }
+      if (filtered.length === 0) return
+      if (e.key === 'j') {
+        e.preventDefault()
+        setActiveIdx((i) => Math.min(i + 1, filtered.length - 1))
+      } else if (e.key === 'k') {
+        e.preventDefault()
+        setActiveIdx((i) => Math.max(i - 1, 0))
+      } else if (e.key === 'd' || e.key === 'x') {
+        e.preventDefault()
+        const note = filtered[activeIdx]
+        if (note) setConfirmDelete(note.relPath)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        const note = filtered[activeIdx]
+        if (note) onSelectNote(note.relPath)
+      }
+    }
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
+  }, [isVisible, filtered, activeIdx, onSelectNote])
+
+  useEffect(() => {
+    setActiveIdx(0)
+  }, [filtered.length])
+
+  useEffect(() => {
+    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
+  }, [activeIdx, filtered])
 
   let filtered = notes.filter((n) => {
     if (sidebarSelection.type === 'folder') {
@@ -271,7 +315,7 @@ export default function NoteList({ onSelectNote }: Props) {
           <SyncIndicator />
         </div>
 
-        <div style={{ ...listStyle, ...(isMobile ? { padding: '6px 12px' } : {}) }}>
+        <div ref={listRef} style={{ ...listStyle, ...(isMobile ? { padding: '6px 12px' } : {}) }}>
           {loading && <div style={loadingStyle(colors)}>{t('loading', lang)}</div>}
           {!loading && filtered.length === 0 && (
             !vaultExists ? (
@@ -291,11 +335,12 @@ export default function NoteList({ onSelectNote }: Props) {
               </div>
             )
           )}
-          {filtered.map((note) => (
+          {filtered.map((note, idx) => (
             <NoteItem
               key={note.relPath}
               note={note}
               isDeleting={deleting.has(note.relPath)}
+              isActive={idx === activeIdx}
               isLastOpened={note.relPath === lastOpenedRelPath}
               onOpen={() => onSelectNote(note.relPath)}
               onContextMenu={(e) => {
@@ -412,6 +457,19 @@ export default function NoteList({ onSelectNote }: Props) {
             setShowCreate(false)
             onSelectNote(relPath)
           }}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message={t('delete.confirm', lang)}
+          confirmLabel={t('delete', lang)}
+          cancelLabel={t('cancel', lang)}
+          onConfirm={() => {
+            deleteNote(confirmDelete)
+            setConfirmDelete(null)
+          }}
+          onCancel={() => setConfirmDelete(null)}
         />
       )}
       </div>

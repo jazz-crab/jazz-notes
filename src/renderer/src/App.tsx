@@ -72,7 +72,7 @@ export default function App() {
           width: '100%',
         }}
       >
-        <NoteList onSelectNote={(relPath) => setScreen({ type: 'edit', relPath })} />
+        <NoteList isVisible={screen.type === 'list'} onSelectNote={(relPath) => setScreen({ type: 'edit', relPath })} />
       </div>
       {screen.type === 'edit' && (
         <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
