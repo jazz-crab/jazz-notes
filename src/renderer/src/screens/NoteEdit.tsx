@@ -331,6 +331,7 @@ const dateBtnStyle = (c: any) => ({
   zIndex: 5,
   display: 'flex',
   alignItems: 'center',
+  justifyContent: 'center',
   gap: 8,
   minWidth: 40,
   height: 40,
