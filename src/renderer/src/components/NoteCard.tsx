@@ -11,11 +11,12 @@ import type React from 'react'
 interface Props {
   note: Note
   isActive: boolean
+  isLastOpened?: boolean
   onClick: () => void
   onContextMenu?: (e: React.MouseEvent) => void
 }
 
-export default function NoteCard({ note, isActive, onClick, onContextMenu }: Props) {
+export default function NoteCard({ note, isActive, isLastOpened, onClick, onContextMenu }: Props) {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
   const showCountdown = useSettingsStore((s) => s.showCountdown)
@@ -40,6 +41,7 @@ export default function NoteCard({ note, isActive, onClick, onContextMenu }: Pro
         ...card(colors),
         ...(cardBg ? { background: cardBg } : {}),
         ...(isActive ? cardActive(colors) : {}),
+        ...(isLastOpened ? { border: `1px dashed ${colors.blue}` } : {}),
       }}
       onClick={onClick}
       onContextMenu={onContextMenu}

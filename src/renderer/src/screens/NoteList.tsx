@@ -28,12 +28,13 @@ interface Props {
 interface NoteItemProps {
   note: Note
   isDeleting: boolean
+  isLastOpened: boolean
   onOpen: () => void
   onContextMenu: (e: React.MouseEvent) => void
   onDeleteConfirmed: () => void
 }
 
-function NoteItem({ note, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
+function NoteItem({ note, isDeleting, isLastOpened, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: note.relPath })
   const confirmedRef = useRef(false)
 
@@ -47,7 +48,7 @@ function NoteItem({ note, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }
   if (isDeleting) {
     return (
       <div>
-        <NoteCard note={note} isActive={false} onClick={onOpen} onContextMenu={onContextMenu} />
+        <NoteCard note={note} isActive={false} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />
       </div>
     )
   }
@@ -63,7 +64,7 @@ function NoteItem({ note, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }
         touchAction: 'none',
       }}
     >
-      <NoteCard note={note} isActive={false} onClick={onOpen} onContextMenu={onContextMenu} />
+      <NoteCard note={note} isActive={false} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />
     </div>
   )
 }
@@ -76,6 +77,7 @@ export default function NoteList({ onSelectNote }: Props) {
   const showDone = useSettingsStore((s) => s.showDone)
   const notes = useNotesStore((s) => s.notes)
   const loading = useNotesStore((s) => s.loading)
+  const lastOpenedRelPath = useNotesStore((s) => s.lastOpenedRelPath)
   const sidebarSelection = useNotesStore((s) => s.sidebarSelection)
   const searchQuery = useNotesStore((s) => s.searchQuery)
   const searchResults = useNotesStore((s) => s.searchResults)
@@ -292,6 +294,7 @@ export default function NoteList({ onSelectNote }: Props) {
               key={note.relPath}
               note={note}
               isDeleting={deleting.has(note.relPath)}
+              isLastOpened={note.relPath === lastOpenedRelPath}
               onOpen={() => onSelectNote(note.relPath)}
               onContextMenu={(e) => {
                 e.preventDefault()

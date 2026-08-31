@@ -63,6 +63,7 @@ interface NotesState {
   notes: Note[]
   folders: string[]
   currentNote: Note | null
+  lastOpenedRelPath: string | null
   sidebarSelection: SidebarSelection
   searchQuery: string
   searchResults: Array<{ relPath: string; title: string; snippet: string }> | null
@@ -100,6 +101,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   notes: [],
   folders: [],
   currentNote: null,
+  lastOpenedRelPath: null,
   sidebarSelection: { type: 'all' },
   searchQuery: '',
   searchResults: null,
@@ -176,7 +178,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     }
     const dirty = new Set(get().dirtyNotes)
     dirty.delete(relPath)
-    set({ currentNote: note, dirtyNotes: dirty })
+    set({ currentNote: note, dirtyNotes: dirty, lastOpenedRelPath: relPath })
     void historyStore.seedFromGit(relPath, notesPath)
   },
 
