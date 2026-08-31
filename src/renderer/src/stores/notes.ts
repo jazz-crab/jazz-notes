@@ -279,8 +279,16 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       priority: note.meta.priority,
       tags: note.meta.tags,
     }
-    await window.jazz.updateNoteDraft(relPath, draft, notesPath)
-    await get().loadNotes()
+    set({ notes: get().notes.map((n) => (n.relPath === relPath ? { ...n, title: finalTitle, body } : n)) })
+    const cur = get().currentNote
+    if (cur?.relPath === relPath) {
+      set({ currentNote: { ...cur, title: finalTitle, body } })
+    }
+    void window.jazz
+      .updateNoteDraft(relPath, draft, notesPath)
+      .then(() => get().loadNotes())
+      .catch(() => get().loadNotes())
+      .catch(() => {})
   },
 
   updateNoteMetaByPath: async (relPath: string, patch: Partial<NoteMeta>) => {
@@ -297,8 +305,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       done: meta.done,
       tags: meta.tags,
     }
-    await window.jazz.updateNoteDraft(relPath, draft, notesPath)
-    await get().loadNotes()
+    set({ notes: get().notes.map((n) => (n.relPath === relPath ? { ...n, meta } : n)) })
+    void window.jazz
+      .updateNoteDraft(relPath, draft, notesPath)
+      .then(() => get().loadNotes())
+      .catch(() => get().loadNotes())
+      .catch(() => {})
   },
 
   moveNote: async (relPath: string, destFolder: string | null) => {
@@ -306,11 +318,16 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const leaf = leafName(relPath)
     const newPath = destFolder ? `${destFolder}/${leaf}` : leaf
     if (newPath === relPath) return
-    await window.jazz.rename(relPath, newPath, notesPath)
-    if (get().currentNote?.relPath === relPath) {
-      set({ currentNote: { ...get().currentNote!, relPath: newPath } })
+    set({ notes: get().notes.map((n) => (n.relPath === relPath ? { ...n, relPath: newPath } : n)) })
+    const cur = get().currentNote
+    if (cur?.relPath === relPath) {
+      set({ currentNote: { ...cur, relPath: newPath } })
     }
-    await get().loadNotes()
+    void window.jazz
+      .rename(relPath, newPath, notesPath)
+      .then(() => get().loadNotes())
+      .catch(() => get().loadNotes())
+      .catch(() => {})
   },
 
   deleteNote: async (relPath: string) => {
@@ -360,9 +377,15 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const { notesPath, sidebarSelection } = get()
     const folder = sidebarSelection.type === 'folder' ? sidebarSelection.path : ''
     const rel = folder ? `${folder}/${n}` : n
-    await window.jazz.createDir(rel, notesPath)
-    await get().loadNotes()
+    if (!get().folders.includes(rel)) {
+      set({ folders: [...get().folders, rel] })
+    }
     set({ sidebarSelection: { type: 'folder', path: rel } })
+    void window.jazz
+      .createDir(rel, notesPath)
+      .then(() => get().loadNotes())
+      .catch(() => get().loadNotes())
+      .catch(() => {})
   },
 
   renameFolder: async (folder: string, newName: string) => {
@@ -372,24 +395,74 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const newPath = parent ? `${parent}/${name}` : name
     if (newPath === folder) return
     const { notesPath } = get()
-    await window.jazz.rename(folder, newPath, notesPath)
-    await get().loadNotes()
+    const prefix = folder + '/'
+    set({
+      folders: get().folders.map((f) =>
+        f === folder ? newPath : f.startsWith(prefix) ? newPath + '/' + f.slice(prefix.length) : f
+      ),
+      notes: get().notes.map((n) =>
+        n.relPath === folder
+          ? { ...n, relPath: newPath }
+          : n.relPath.startsWith(prefix)
+            ? { ...n, relPath: newPath + '/' + n.relPath.slice(prefix.length) }
+            : n
+      ),
+    })
     const sel = get().sidebarSelection
     if (sel.type === 'folder' && sel.path === folder) {
       set({ sidebarSelection: { type: 'folder', path: newPath } })
     }
+    const cur = get().currentNote
+    if (cur?.relPath === folder || cur?.relPath.startsWith(prefix)) {
+      set({
+        currentNote: {
+          ...cur,
+          relPath: cur.relPath === folder ? newPath : newPath + '/' + cur.relPath.slice(prefix.length),
+        },
+      })
+    }
+    void window.jazz
+      .rename(folder, newPath, notesPath)
+      .then(() => get().loadNotes())
+      .catch(() => get().loadNotes())
+      .catch(() => {})
   },
 
   moveFolder: async (folder: string, dest: string | null) => {
     const { notesPath } = get()
     const newPath = moveFolderPath(folder, dest)
     if (newPath === folder) return
-    await window.jazz.rename(folder, newPath, notesPath)
-    await get().loadNotes()
+    const prefix = folder + '/'
+    set({
+      folders: get().folders.map((f) =>
+        f === folder ? newPath : f.startsWith(prefix) ? newPath + '/' + f.slice(prefix.length) : f
+      ),
+      notes: get().notes.map((n) =>
+        n.relPath === folder
+          ? { ...n, relPath: newPath }
+          : n.relPath.startsWith(prefix)
+            ? { ...n, relPath: newPath + '/' + n.relPath.slice(prefix.length) }
+            : n
+      ),
+    })
     const sel = get().sidebarSelection
     if (sel.type === 'folder' && sel.path === folder) {
       set({ sidebarSelection: { type: 'folder', path: newPath } })
     }
+    const cur = get().currentNote
+    if (cur?.relPath === folder || cur?.relPath.startsWith(prefix)) {
+      set({
+        currentNote: {
+          ...cur,
+          relPath: cur.relPath === folder ? newPath : newPath + '/' + cur.relPath.slice(prefix.length),
+        },
+      })
+    }
+    void window.jazz
+      .rename(folder, newPath, notesPath)
+      .then(() => get().loadNotes())
+      .catch(() => get().loadNotes())
+      .catch(() => {})
   },
 
   deleteFolder: async (folder: string) => {
