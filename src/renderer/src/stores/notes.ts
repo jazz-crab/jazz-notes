@@ -80,7 +80,7 @@ interface NotesState {
   updateCurrentNote: (body: string) => void
   updateNoteMeta: (meta: Partial<NoteMeta>) => void
   saveCurrentNote: () => Promise<boolean>
-  createNote: (title: string, onCreated?: (relPath: string) => void) => Promise<string>
+  createNote: (title: string, onCreated?: (relPath: string) => void, folder?: string, draftMeta?: Partial<NoteMeta>) => Promise<string>
   deleteNote: (relPath: string) => Promise<void>
   handleExternalChange: (relPath: string) => void
   renameNote: (relPath: string, title: string) => Promise<void>
@@ -230,16 +230,29 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     return true
   },
 
-  createNote: async (title: string, onCreated?: (relPath: string) => void) => {
+  createNote: async (title: string, onCreated?: (relPath: string) => void, folderParam?: string, draftMeta?: Partial<NoteMeta>) => {
     if (!get().vaultExists) return ''
     const { notesPath, notes, sidebarSelection } = get()
-    const folder = sidebarSelection.type === 'folder' ? sidebarSelection.path : ''
+    const folder = folderParam ?? (sidebarSelection.type === 'folder' ? sidebarSelection.path : '')
     const finalTitle = title.trim() || `#${computeAndStoreNextId(notes)}`
-    const draft: NoteDraft = { title: finalTitle, text: '', folder }
+    const draft: NoteDraft = {
+      title: finalTitle,
+      text: '',
+      folder,
+      ...(draftMeta?.due ? { due: draftMeta.due } : {}),
+      ...(draftMeta?.color ? { color: draftMeta.color } : {}),
+    }
     try {
       const info = await window.jazz.createNoteDraft(draft, notesPath)
       const now = new Date().toISOString()
-      const meta: NoteMeta = { id: info.id, title: info.title, created: now, updated: now }
+      const meta: NoteMeta = {
+        id: info.id,
+        title: info.title,
+        created: now,
+        updated: now,
+        ...(draftMeta?.due ? { due: draftMeta.due } : {}),
+        ...(draftMeta?.color ? { color: draftMeta.color } : {}),
+      }
       ignoreWatcher.add(info.relPath)
       setTimeout(() => ignoreWatcher.delete(info.relPath), 3000)
       onCreated?.(info.relPath)

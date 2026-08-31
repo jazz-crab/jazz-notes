@@ -16,6 +16,7 @@ import Modal from '../components/Modal'
 import PromptDialog from '../components/PromptDialog'
 import DatePicker from '../components/DatePicker'
 import ColorPicker from '../components/ColorPicker'
+import NoteCreateDialog from '../components/NoteCreateDialog'
 import { DndContext, useDraggable, useSensors, useSensor, PointerSensor, TouchSensor } from '@dnd-kit/core'
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
@@ -88,18 +89,17 @@ export default function NoteList({ onSelectNote }: Props) {
   const setSearchQuery = useNotesStore((s) => s.setSearchQuery)
   const setSortBy = useNotesStore((s) => s.setSortBy)
   const deleteNote = useNotesStore((s) => s.deleteNote)
-  const createNote = useNotesStore((s) => s.createNote)
   const renameNote = useNotesStore((s) => s.renameNote)
   const moveNote = useNotesStore((s) => s.moveNote)
   const updateNoteMetaByPath = useNotesStore((s) => s.updateNoteMetaByPath)
   const folders = useNotesStore((s) => s.folders)
 
-  const [newTitle, setNewTitle] = useState('')
   const [deleting, setDeleting] = useState<Set<string>>(new Set())
   const [menu, setMenu] = useState<{ x: number; y: number; note: Note } | null>(null)
   const [noteAction, setNoteAction] = useState<NoteAction>(null)
   const [movingNote, setMovingNote] = useState<Note | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
   const isMobile = useIsMobile()
 
   const sensors = useSensors(
@@ -200,13 +200,6 @@ export default function NoteList({ onSelectNote }: Props) {
     })
   }
 
-  const handleCreate = async (quick = false) => {
-    if (!vaultExists) return
-    setNewTitle('')
-    const relPath = await createNote(newTitle)
-    if (relPath && !quick) onSelectNote(relPath)
-  }
-
   const openMenu = (note: Note, x: number, y: number) => {
     setMenu({ note, x, y })
   }
@@ -241,16 +234,25 @@ export default function NoteList({ onSelectNote }: Props) {
             )}
             <NextDueTimer />
           </div>
-          <div style={{ position: 'relative' as const }}>
-            <input
-              style={searchStyle(colors)}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('search.placeholder', lang)}
-            />
-            {searchQuery && (
-              <button style={clearBtnStyle(colors)} onClick={() => setSearchQuery('')}>×</button>
-            )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              style={addBtnStyle(colors)}
+              title={t('new.note', lang)}
+              onClick={() => setShowCreate(true)}
+            >
+              {'+'}
+            </button>
+            <div style={{ position: 'relative' as const, flex: 1 }}>
+              <input
+                style={searchStyle(colors)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('search.placeholder', lang)}
+              />
+              {searchQuery && (
+                <button style={clearBtnStyle(colors)} onClick={() => setSearchQuery('')}>×</button>
+              )}
+            </div>
           </div>
           <div style={sortRowStyle}>
             {sortOptions.map((opt) => (
@@ -304,23 +306,6 @@ export default function NoteList({ onSelectNote }: Props) {
             />
           ))}
         </div>
-
-        {vaultExists && (
-          <div style={bottomBarStyle(colors)}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                style={newNoteInputStyle(colors)}
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                placeholder={t('new.note.placeholder', lang)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreate(e.ctrlKey || e.metaKey)
-                }}
-              />
-              <button style={createBtnStyle(colors)} onClick={(e) => handleCreate(e.ctrlKey || e.metaKey)}>{t('create', lang)}</button>
-            </div>
-          </div>
-        )}
       </div>
 
       {menu && (
@@ -417,6 +402,17 @@ export default function NoteList({ onSelectNote }: Props) {
             }}
           />
         </Modal>
+      )}
+
+      {showCreate && (
+        <NoteCreateDialog
+          defaultFolder={sidebarSelection.type === 'folder' ? sidebarSelection.path : ''}
+          onClose={() => setShowCreate(false)}
+          onCreated={(relPath) => {
+            setShowCreate(false)
+            onSelectNote(relPath)
+          }}
+        />
       )}
       </div>
     </DndContext>
@@ -540,26 +536,17 @@ const vaultRetryBtnStyle = (c: any) => ({
   fontWeight: 700,
   fontSize: 13,
 })
-const bottomBarStyle = (c: any) => ({
-  padding: '8px 20px 12px',
-  borderTop: `1px solid ${c.border}`,
-})
-const newNoteInputStyle = (c: any) => ({
-  flex: 1,
-  padding: '8px 12px',
-  background: c.bgAlt,
+const addBtnStyle = (c: any): React.CSSProperties => ({
+  width: 34,
+  height: 34,
+  borderRadius: 6,
   border: `1px solid ${c.border}`,
-  borderRadius: 6,
+  background: c.bgAlt,
   color: c.fg,
-  fontSize: 13,
-})
-const createBtnStyle = (c: any) => ({
-  padding: '8px 16px',
-  background: c.blue,
-  color: c.bg,
-  borderRadius: 6,
+  fontSize: 18,
   fontWeight: 700,
-  fontSize: 16,
+  cursor: 'pointer',
+  flexShrink: 0,
 })
 const moveListStyle: React.CSSProperties = {
   display: 'flex',
