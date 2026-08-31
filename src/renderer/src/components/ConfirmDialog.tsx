@@ -32,15 +32,15 @@ export default function ConfirmDialog({ message, confirmLabel, cancelLabel, onCo
   const requestClose = (fn: () => void) => () => {
     if (closing) return
     setClosing(true)
-    setTimeout(fn, 150)
+    fn()
   }
 
   return (
     <div
-      style={overlayStyle(closing)}
+      style={overlayStyle}
       onClick={requestClose(onCancel)}
     >
-      <div style={dialogStyle(colors, closing)} onClick={(e) => e.stopPropagation()}>
+      <div style={dialogStyle(colors)} onClick={(e) => e.stopPropagation()}>
         <div style={messageStyle(colors)}>{message}</div>
         <div style={actionsStyle}>
           <button style={cancelBtnStyle(colors)} onClick={requestClose(onCancel)}>
@@ -55,7 +55,7 @@ export default function ConfirmDialog({ message, confirmLabel, cancelLabel, onCo
   )
 }
 
-const overlayStyle = (closing: boolean): React.CSSProperties => ({
+const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
   background: 'rgba(0,0,0,0.5)',
@@ -63,9 +63,8 @@ const overlayStyle = (closing: boolean): React.CSSProperties => ({
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 2000,
-  animation: closing ? 'fadeOut 0.15s ease both' : 'fadeIn 0.15s ease both',
-})
-const dialogStyle = (c: any, closing: boolean) => ({
+}
+const dialogStyle = (c: any) => ({
   background: c.bgPopup,
   border: `1px solid ${c.border}`,
   borderRadius: 10,
@@ -73,7 +72,6 @@ const dialogStyle = (c: any, closing: boolean) => ({
   minWidth: 280,
   maxWidth: '90vw' as const,
   boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-  animation: closing ? 'dialogOut 0.15s ease both' : 'dialogIn 0.2s ease both',
 })
 const messageStyle = (c: any) => ({
   fontSize: 15,

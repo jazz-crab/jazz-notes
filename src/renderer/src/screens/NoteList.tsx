@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNotesStore, type SortBy, type Note } from '../stores/notes'
 import { useColors } from '../theme'
 import { t } from '../utils/i18n'
@@ -35,15 +35,18 @@ interface NoteItemProps {
 
 function NoteItem({ note, isDeleting, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: note.relPath })
+  const confirmedRef = useRef(false)
+
+  useEffect(() => {
+    if (isDeleting && !confirmedRef.current) {
+      confirmedRef.current = true
+      onDeleteConfirmed()
+    }
+  }, [isDeleting])
 
   if (isDeleting) {
     return (
-      <div
-        style={{ animation: 'cardOut 0.22s ease both' }}
-        onAnimationEnd={(e) => {
-          if (e.target === e.currentTarget) onDeleteConfirmed()
-        }}
-      >
+      <div>
         <NoteCard note={note} isActive={false} onClick={onOpen} onContextMenu={onContextMenu} />
       </div>
     )

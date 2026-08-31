@@ -46,7 +46,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
     pointerEvents: 'none',
-    animation: 'fadeIn 0.15s ease both',
     whiteSpace: 'nowrap',
   },
   key: {

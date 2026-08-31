@@ -13,22 +13,10 @@ interface Props {
 export default function SidePanel({ side, open, onClose, children, width }: Props) {
   const colors = useColors()
   const [render, setRender] = useState(open)
-  const [closing, setClosing] = useState(false)
 
   useEffect(() => {
-    if (open) {
-      setRender(true)
-      setClosing(false)
-      return
-    }
-    if (!render) return
-    setClosing(true)
-    const t = setTimeout(() => {
-      setRender(false)
-      setClosing(false)
-    }, 200)
-    return () => clearTimeout(t)
-  }, [open, render])
+    setRender(open)
+  }, [open])
 
   useEffect(() => {
     if (!render) return
@@ -44,13 +32,10 @@ export default function SidePanel({ side, open, onClose, children, width }: Prop
 
   if (!render) return null
 
-  const animIn = side === 'left' ? 'slideInLeft 0.24s ease both' : 'slideInRight 0.24s ease both'
-  const animOut = side === 'left' ? 'slideOutLeft 0.18s ease both' : 'slideOutRight 0.18s ease both'
-
   return (
-    <div style={overlayStyle(closing)} onClick={onClose}>
+    <div style={overlayStyle} onClick={onClose}>
       <div
-        style={panelStyle(colors, side, closing, width, animIn, animOut)}
+        style={panelStyle(colors, side, width)}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -59,19 +44,15 @@ export default function SidePanel({ side, open, onClose, children, width }: Prop
   )
 }
 
-const overlayStyle = (closing: boolean): React.CSSProperties => ({
+const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
   zIndex: 900,
-  animation: closing ? 'fadeOut 0.18s ease both' : 'fadeIn 0.18s ease both',
-})
+}
 const panelStyle = (
   c: any,
   side: 'left' | 'right',
-  closing: boolean,
   width: number | undefined,
-  animIn: string,
-  animOut: string,
 ): React.CSSProperties => ({
   position: 'absolute',
   bottom: 48,
@@ -89,5 +70,4 @@ const panelStyle = (
     : '-4px 0 24px rgba(0,0,0,0.35)',
   padding: 12,
   zIndex: 901,
-  animation: closing ? animOut : animIn,
 })

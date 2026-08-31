@@ -51,5 +51,5 @@ const dotStyle: React.CSSProperties = {
   width: 22,
   height: 22,
   borderRadius: '50%',
-  transition: 'border-color 0.1s, transform 0.1s',
+  transition: 'border-color 0.1s',
 }

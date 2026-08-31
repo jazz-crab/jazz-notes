@@ -248,7 +248,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: '2px solid var(--border)',
     borderTopColor: 'var(--blue)',
     borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
   },
 }
 
@@ -351,5 +350,4 @@ const dateTextStyle = (c: any, overdue: boolean) => ({
   whiteSpace: 'nowrap' as const,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
-  animation: 'fadeIn 0.25s ease both',
 })

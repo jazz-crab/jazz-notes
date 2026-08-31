@@ -46,7 +46,6 @@ export default function SyncIndicator() {
 
   if (status === 'idle') return null
 
-  const syncing = status === 'syncing'
   const color = colorFor(status, colors)
 
   return (
@@ -55,7 +54,6 @@ export default function SyncIndicator() {
         style={{
           ...dotStyle,
           background: color,
-          animation: syncing ? 'pulse 1.6s ease-in-out infinite' : 'none',
         }}
         onClick={() => setShowPopup((v) => !v)}
         title={t(statusKey[status], lang)}
@@ -104,7 +102,7 @@ const dotStyle: React.CSSProperties = {
   height: 12,
   borderRadius: '50%',
   cursor: 'pointer',
-  transition: 'background 0.5s ease, opacity 0.5s ease, transform 0.5s ease',
+  transition: 'background 0.5s ease, opacity 0.5s ease',
 }
 const popupStyle = (c: any) => ({
   position: 'absolute' as const,

@@ -469,7 +469,6 @@ const switchThumbStyle = (isDark: boolean) => ({
   position: 'absolute' as const,
   top: 2,
   left: isDark ? 20 : 2,
-  transition: 'left 0.2s',
   boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
 })
 const selectStyle = (c: any) => ({

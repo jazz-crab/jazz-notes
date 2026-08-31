@@ -34,7 +34,6 @@ export default function SaveStatusCircle({ status, lastSavedAt, error }: Props) 
   const lang = useSettingsStore((s) => s.lang)
   const [showPopup, setShowPopup] = useState(false)
   const color = colorFor(status, colors)
-  const saving = status === 'saving'
   const statusLabel = t(statusKey[status], lang)
 
   return (
@@ -43,7 +42,6 @@ export default function SaveStatusCircle({ status, lastSavedAt, error }: Props) 
         style={{
           ...dotStyle,
           background: color,
-          animation: saving ? 'pulse 1.6s ease-in-out infinite' : 'none',
         }}
         onClick={() => setShowPopup((v) => !v)}
         title={statusLabel}
@@ -76,7 +74,7 @@ const dotStyle: React.CSSProperties = {
   height: 12,
   borderRadius: '50%',
   cursor: 'pointer',
-  transition: 'background 0.5s ease, opacity 0.5s ease, transform 0.5s ease',
+  transition: 'background 0.5s ease, opacity 0.5s ease',
 }
 const popupStyle = (c: any) => ({
   position: 'absolute' as const,
