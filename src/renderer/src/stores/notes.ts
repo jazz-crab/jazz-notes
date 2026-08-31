@@ -315,11 +315,15 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   deleteNote: async (relPath: string) => {
     const { notesPath } = get()
-    await window.jazz.deleteFile(relPath, notesPath)
     if (get().currentNote?.relPath === relPath) {
       set({ currentNote: null })
     }
-    await get().loadNotes()
+    set({ notes: get().notes.filter((n) => n.relPath !== relPath) })
+    void window.jazz
+      .deleteFile(relPath, notesPath)
+      .then(() => get().loadNotes())
+      .catch(() => get().loadNotes())
+      .catch(() => {})
   },
 
   setSidebarSelection: (sel) => set({ sidebarSelection: sel }),
@@ -390,12 +394,19 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   deleteFolder: async (folder: string) => {
     const { notesPath } = get()
-    await window.jazz.deleteDir(folder, notesPath)
-    await get().loadNotes()
+    set({
+      notes: get().notes.filter((n) => !n.relPath.startsWith(folder + '/')),
+      folders: get().folders.filter((f) => f !== folder && !f.startsWith(folder + '/')),
+    })
     const sel = get().sidebarSelection
     if (sel.type === 'folder' && sel.path === folder) {
       set({ sidebarSelection: { type: 'all' } })
     }
+    void window.jazz
+      .deleteDir(folder, notesPath)
+      .then(() => get().loadNotes())
+      .catch(() => get().loadNotes())
+      .catch(() => {})
   },
 }))
 
