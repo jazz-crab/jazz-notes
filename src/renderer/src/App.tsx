@@ -64,13 +64,22 @@ export default function App() {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {screen.type === 'list' ? (
+      <div
+        style={{
+          display: screen.type === 'list' ? 'flex' : 'none',
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
         <NoteList onSelectNote={(relPath) => setScreen({ type: 'edit', relPath })} />
-      ) : (
-        <NoteEdit
-          relPath={screen.relPath}
-          onBack={() => setScreen({ type: 'list' })}
-        />
+      </div>
+      {screen.type === 'edit' && (
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          <NoteEdit
+            relPath={screen.relPath}
+            onBack={() => setScreen({ type: 'list' })}
+          />
+        </div>
       )}
       <SettingsDialog />
       {showExitConfirm && (
