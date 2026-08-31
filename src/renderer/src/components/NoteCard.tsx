@@ -33,7 +33,7 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
   const countdown = isFuture && showCountdown ? formatSmartCountdown(due.getTime() - now, lang) : null
   const preview = note.body.replace(/^#+\s*/gm, '').replace(/[*~`>-]/g, '').trim().slice(0, 140)
   const cardBg = noteColor ? mixHex(noteColor, colors.bgAlt, 0.1) : undefined
-  const lastOpenedBg = isLastOpened ? mixHex(colors.blue, colors.bgAlt, 0.12) : undefined
+  const lastOpenedBg = isLastOpened ? mixHex(colors.blue, colors.bgAlt, 0.08) : undefined
   const folder = parentOf(note.relPath)
 
   return (
