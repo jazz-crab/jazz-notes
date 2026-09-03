@@ -46,6 +46,6 @@ export function decodeSyncConfig(text: string): SyncConfig | null {
     if (parts.length !== 3) return null
     ;[url, user, token] = parts
   }
-  if (!url || !user || !isValidSyncToken(token)) return null
+  if (!url || !user || !token) return null
   return { url, user, token }
 }

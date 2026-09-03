@@ -1,4 +1,5 @@
 import * as svc from '../shared/service'
+import * as gitUsers from '../../web/git-users'
 
 const VAULT = process.env.JAZZ_VAULT || ''
 
@@ -21,6 +22,11 @@ function usage(): string {
     `  git history [--rel <rel>] [--limit <n>]`,
     `  git show <rel> <hash>`,
     `  git restore <rel> <hash>`,
+    `  git-users list`,
+    `  git-users add <login> [--password <p>]`,
+    `  git-users remove <login>`,
+    `  git-users set-password <login> [--password <p>]`,
+    `  git-users rename <old> <new>`,
   ].join('\n')
 }
 
@@ -134,6 +140,71 @@ export async function run(args: string[]): Promise<void> {
       return
     }
 
+    case 'git-users': {
+      await gitUsers.ensureDefaultUser()
+      const sub = rest[0]
+      if (!sub) fail('usage: git-users <list|add|remove|set-password|rename>')
+      if (sub === 'list') {
+        const users = await gitUsers.listUsers()
+        console.log(users.map((u) => u.login).join(', '))
+        return
+      }
+      if (sub === 'add') {
+        const login = rest[1]
+        if (!login) fail('usage: git-users add <login> [--password <p>]')
+        let password: string | undefined
+        for (let i = 2; i < rest.length; i++) {
+          if (rest[i] === '--password' && rest[i + 1]) {
+            password = rest[i + 1]
+            i++
+          } else if (password === undefined) {
+            password = rest[i]
+          }
+        }
+        if (password === undefined || password === '') password = (await readStdin()).replace(/\s+$/, '')
+        const res = await gitUsers.addUser(login, password)
+        if (!res.ok) fail(res.error || 'failed')
+        console.log(`added user ${login}`)
+        return
+      }
+      if (sub === 'remove') {
+        const login = rest[1]
+        if (!login) fail('usage: git-users remove <login>')
+        const res = await gitUsers.removeUser(login)
+        if (!res.ok) fail(res.error || 'failed')
+        console.log(`removed user ${login}`)
+        return
+      }
+      if (sub === 'set-password') {
+        const login = rest[1]
+        if (!login) fail('usage: git-users set-password <login> [--password <p>]')
+        let password: string | undefined
+        for (let i = 2; i < rest.length; i++) {
+          if (rest[i] === '--password' && rest[i + 1]) {
+            password = rest[i + 1]
+            i++
+          } else if (password === undefined) {
+            password = rest[i]
+          }
+        }
+        if (password === undefined || password === '') password = (await readStdin()).replace(/\s+$/, '')
+        const res = await gitUsers.setPassword(login, password)
+        if (!res.ok) fail(res.error || 'failed')
+        console.log(`password updated for ${login}`)
+        return
+      }
+      if (sub === 'rename') {
+        const oldLogin = rest[1]
+        const newLogin = rest[2]
+        if (!oldLogin || !newLogin) fail('usage: git-users rename <old> <new>')
+        const res = await gitUsers.renameUser(oldLogin, newLogin)
+        if (!res.ok) fail(res.error || 'failed')
+        console.log(`renamed ${oldLogin} to ${newLogin}`)
+        return
+      }
+      fail('unknown git-users command')
+    }
+
     case 'git': {
       const sub = rest[0]
       if (!sub) fail('usage: git <commit|sync|history|show|restore>')
@@ -210,7 +281,8 @@ export async function run(args: string[]): Promise<void> {
 }
 
 export async function main(argv: string[]): Promise<void> {
-  if (!VAULT) {
+  const isGitUsers = argv[0] === 'git-users'
+  if (!VAULT && !isGitUsers) {
     process.stderr.write(
       'JAZZ_VAULT is not set. Point it at your notes folder, e.g. JAZZ_VAULT=/home/user/Documents/jazz-notes-vault node dist/cli.js list\n'
     )

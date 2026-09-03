@@ -70,10 +70,12 @@ jobs:
           cp web/dist-server/node-sqlite3-wasm.wasm stage/node-sqlite3-wasm.wasm
           cp -r web/dist stage/dist
           cp deploy/install.sh stage/install.sh
-          cp deploy/jazz-note-server.service stage/jazz-note-server.service
+          cp deploy/install-server.sh stage/install-server.sh
+          cp deploy/jazz-notes-web.service stage/jazz-notes-web.service
+          cp deploy/post-receive stage/post-receive
           cp deploy/README-server.md stage/README-server.md
           node -e 'const fs=require("fs");fs.writeFileSync("stage/package.json",JSON.stringify({name:"jazz-note-server",version:process.env.GITHUB_REF_NAME,main:"server.js",scripts:{start:"node server.js"}},null,2)+"\n")'
-          chmod +x stage/install.sh
+          chmod +x stage/install.sh stage/install-server.sh stage/post-receive
           tar -czf "jazz-note-server-${GITHUB_REF_NAME}.tar.gz" -C stage .
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2

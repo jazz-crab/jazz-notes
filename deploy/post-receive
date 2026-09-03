@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# post-receive hook for JazzNote bare repository.
+# After every successful push this script:
+#   1. Checks out the working vault so the web UI sees the latest notes.
+#   2. Updates server-info so subsequent smart-HTTP fetches see correct refs.
+#   3. Notifies the web server to re-index (best-effort).
+#
+# Install into <bare-repo>/hooks/post-receive via deploy/install-hook.sh.
+#
+# Environment:
+#   JAZZ_VAULT      — path to the working vault (required).
+#   JAZZ_WEB_PORT   — web-server port for re-index notification (default: 3180).
+#   JAZZ_ENV_FILE   — fallback env file to source JAZZ_VAULT from. If unset,
+#                     falls back to ~/.config/jazz-note-server.env and
+#                     ~/.config/jazz-notes-web.env (whichever exists).
+#   JAZZ_BARE_REPO  — (unused here, but available for hook logic).
+#
+# IMPORTANT: this hook MUST exit 0 on success. A non-zero exit code would
+# cause git to reject the push.
+
+set -u
+
+# ---------------------------------------------------------------------------
+# 1. Resolve vault path
+# ---------------------------------------------------------------------------
+VAULT="${JAZZ_VAULT:-}"
+
+# If not set via environment, try reading from an env file.
+# Prefer the explicitly configured JAZZ_ENV_FILE, then a couple of common
+# defaults so the hook works on typical installs without extra config.
+if [ -z "$VAULT" ]; then
+  for ENV_FILE in \
+    "${JAZZ_ENV_FILE:-}" \
+    "$HOME/.config/jazz-note-server.env" \
+    "$HOME/.config/jazz-notes-web.env"; do
+    [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ] || continue
+    # Simple KEY=VALUE parser — reads only the needed variables.
+    while IFS='=' read -r key value; do
+      case "$key" in
+        JAZZ_VAULT) VAULT="${JAZZ_VAULT:-$value}" ;;
+      esac
+    done < "$ENV_FILE"
+    [ -n "$VAULT" ] && break
+  done
+fi
+
+# If still empty, warn and exit cleanly — never block a push.
+if [ -z "$VAULT" ]; then
+  echo "post-receive: JAZZ_VAULT is not set and could not be resolved — skipping checkout" >&2
+  exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Check out working tree into the vault
+# ---------------------------------------------------------------------------
+echo "post-receive: checking out into $VAULT"
+git --work-tree="$VAULT" checkout -f 2>&1 || {
+  echo "post-receive: checkout failed (exit $?), push was received but vault may be stale" >&2
+}
+
+# ---------------------------------------------------------------------------
+# 3. Update server-info so next smart-HTTP fetch sees current refs
+# ---------------------------------------------------------------------------
+git update-server-info 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# 4. Re-index via web-server API (best-effort, non-critical)
+# ---------------------------------------------------------------------------
+PORT="${JAZZ_WEB_PORT:-3180}"
+curl -s -m 5 -X POST -H 'Content-Type: application/json' \
+  -d '{"message":"post-receive"}' \
+  "http://127.0.0.1:${PORT}/api/git/commit" >/dev/null 2>&1 || true
+
+exit 0

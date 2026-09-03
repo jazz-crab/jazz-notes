@@ -67,6 +67,10 @@ function createWindow() {
     mainWindow?.show()
   })
 
+  mainWindow.on('focus', () => {
+    mainWindow?.webContents.send('app:focus')
+  })
+
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
   } else {

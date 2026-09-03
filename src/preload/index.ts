@@ -58,6 +58,12 @@ const api = {
     const handler = (_event: any, relPath: string) => cb(relPath)
     ipcRenderer.on('notes:changed', handler)
     return () => ipcRenderer.removeListener('notes:changed', handler)
+  },
+
+  onAppFocus: (cb: () => void) => {
+    const handler = () => cb()
+    ipcRenderer.on('app:focus', handler)
+    return () => ipcRenderer.removeListener('app:focus', handler)
   }
 }
 

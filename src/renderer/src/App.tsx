@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSettingsStore } from './stores/settings'
+import { useSettingsStore, clampUiZoom, UI_ZOOM_STEP } from './stores/settings'
 import { getVariant, getThemeCSSVars, getAtomicEditorCSSVars } from './theme/themes'
 import { getFontFamily } from './utils/fonts'
 import { t } from './utils/i18n'
@@ -34,10 +34,15 @@ export default function App() {
   const isDark = useSettingsStore((s) => s.isDark)
   const font = useSettingsStore((s) => s.font)
   const lang = useSettingsStore((s) => s.lang)
+  const uiZoom = useSettingsStore((s) => s.uiZoom)
 
   useEffect(() => {
     applyTheme(palette, isDark, font)
   }, [palette, isDark, font])
+
+  useEffect(() => {
+    document.documentElement.style.zoom = String(uiZoom)
+  }, [uiZoom])
 
   useEffect(() => {
     void historyStore.init()
@@ -56,6 +61,39 @@ export default function App() {
     }
     window.addEventListener('keydown', handleKey, true)
     return () => window.removeEventListener('keydown', handleKey, true)
+  }, [])
+
+  useEffect(() => {
+    const zoomBy = (delta: number) => {
+      const { uiZoom, setUiZoom } = useSettingsStore.getState()
+      setUiZoom(clampUiZoom(uiZoom + delta))
+    }
+    const handleZoomKey = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      if (e.key === '=' || e.key === '+') {
+        e.preventDefault()
+        zoomBy(UI_ZOOM_STEP)
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault()
+        zoomBy(-UI_ZOOM_STEP)
+      } else if (e.key === '0') {
+        e.preventDefault()
+        useSettingsStore.getState().setUiZoom(1)
+      }
+    }
+    window.addEventListener('keydown', handleZoomKey, true)
+    return () => window.removeEventListener('keydown', handleZoomKey, true)
+  }, [])
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey || e.deltaY === 0) return
+      e.preventDefault()
+      const { uiZoom, setUiZoom } = useSettingsStore.getState()
+      setUiZoom(clampUiZoom(uiZoom + (e.deltaY < 0 ? UI_ZOOM_STEP : -UI_ZOOM_STEP)))
+    }
+    window.addEventListener('wheel', handleWheel, { passive: false })
+    return () => window.removeEventListener('wheel', handleWheel)
   }, [])
 
   const handleExitConfirm = () => {

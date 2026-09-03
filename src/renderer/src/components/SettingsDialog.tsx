@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSettingsStore } from '../stores/settings'
+import { useSettingsStore, clampUiZoom, UI_ZOOM_STEP } from '../stores/settings'
 import { useSyncStore } from '../stores/sync'
 import { palettes } from '../theme/themes'
 import { fontOptions } from '../utils/fonts'
@@ -22,6 +22,8 @@ export default function SettingsDialog() {
   const toggleDark = useSettingsStore((s) => s.toggleDark)
   const setLang = useSettingsStore((s) => s.setLang)
   const setFont = useSettingsStore((s) => s.setFont)
+  const uiZoom = useSettingsStore((s) => s.uiZoom)
+  const setUiZoom = useSettingsStore((s) => s.setUiZoom)
   const notesPath = useSettingsStore((s) => s.notesPath)
   const setNotesPath = useSettingsStore((s) => s.setNotesPath)
   const showCountdown = useSettingsStore((s) => s.showCountdown)
@@ -34,6 +36,8 @@ export default function SettingsDialog() {
   const setSyncUser = useSettingsStore((s) => s.setSyncUser)
   const syncPass = useSettingsStore((s) => s.syncPass)
   const setSyncPass = useSettingsStore((s) => s.setSyncPass)
+  const autoSync = useSettingsStore((s) => s.autoSync)
+  const setAutoSync = useSettingsStore((s) => s.setAutoSync)
   const syncNow = useSyncStore((s) => s.syncNow)
   const syncStatus = useSyncStore((s) => s.status)
   const loadNotes = useNotesStore((s) => s.loadNotes)
@@ -69,6 +73,8 @@ export default function SettingsDialog() {
     setSyncUser(config.user)
     setSyncPass(config.token)
   }
+
+  const zoomBy = (delta: number) => setUiZoom(clampUiZoom(uiZoom + delta))
 
   useEffect(() => {
     if (!showSettings) return
@@ -222,6 +228,23 @@ export default function SettingsDialog() {
                   ))}
                 </div>
               </div>
+
+              <div style={groupStyle}>
+                <label style={labelStyle(colors)}>{t('ui.zoom', lang)}</label>
+                <div style={zoomRowStyle}>
+                  <button style={zoomStepBtnStyle(colors)} onClick={() => zoomBy(-UI_ZOOM_STEP)}>
+                    {'\u2212'}
+                  </button>
+                  <span style={zoomValueStyle(colors)}>{Math.round(uiZoom * 100)}%</span>
+                  <button style={zoomStepBtnStyle(colors)} onClick={() => zoomBy(UI_ZOOM_STEP)}>
+                    {'+'}
+                  </button>
+                  <span style={{ flex: 1 }} />
+                  <button style={actionBtnStyle(colors)} onClick={() => setUiZoom(1)}>
+                    {t('ui.zoom.reset', lang)}
+                  </button>
+                </div>
+              </div>
             </>
           )}
 
@@ -266,6 +289,12 @@ export default function SettingsDialog() {
               <div style={syncRowStyle}>
                 <button style={syncBtnStyle(colors)} onClick={() => void syncNow()}>
                   {syncStatus === 'syncing' ? t('sync.syncing', lang) : t('sync.now', lang)}
+                </button>
+              </div>
+              <div style={toggleGroupStyle}>
+                <span style={toggleLabelStyle(isDark ? 'dark' : 'light')}>{t('sync.auto', lang)}</span>
+                <button style={switchTrackStyle(autoSync)} onClick={() => setAutoSync(!autoSync)}>
+                  <span style={switchThumbStyle(autoSync)} />
                 </button>
               </div>
               <div style={importRowStyle}>
@@ -408,6 +437,34 @@ const fontCheckStyle = (c: any) => ({
 })
 const fontBtnActiveStyle = (c: any) => ({
   borderColor: c.blue,
+})
+const zoomRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+}
+const zoomStepBtnStyle = (c: any) => ({
+  width: 30,
+  height: 30,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: c.bg,
+  border: `1px solid ${c.border}`,
+  borderRadius: 6,
+  color: c.fg,
+  fontSize: 16,
+  lineHeight: 1,
+  cursor: 'pointer',
+  transition: 'background 0.15s',
+  opacity: 'var(--btn-dim)',
+})
+const zoomValueStyle = (c: any) => ({
+  minWidth: 48,
+  textAlign: 'center' as const,
+  fontSize: 14,
+  fontWeight: 600,
+  color: c.fg,
 })
 const themeBtnStyle = (c: any) => ({
   display: 'flex',

@@ -7,7 +7,8 @@ import { parseNote, type NoteDraft } from '../src/shared/note'
 import { getIndexStore } from './index-store-web'
 import { handleNotePost } from './note-receiver'
 import { authenticate, loadUsers } from './auth'
-
+import { handleGitSmartHttp } from './git-smart-http'
+import { verifyUser, ensureDefaultUser } from './git-users'
 const VAULT = process.env.JAZZ_VAULT || ''
 if (!VAULT) {
   console.error(
@@ -15,6 +16,7 @@ if (!VAULT) {
   )
   process.exit(1)
 }
+const BARE_REPO = process.env.JAZZ_BARE_REPO || VAULT + '.git'
 const HISTORY_PATH = join(process.env.HOME || '/home/jc', '.jazz-notes-web-history.json')
 const PORT = Number(process.env.PORT || 3180)
 const ROOT =
@@ -107,11 +109,39 @@ async function serveStatic(res: ServerResponse, urlPath: string) {
   }
 }
 
+function isGitRequest(url: URL): boolean {
+  const p = url.pathname
+  if (p.endsWith('/info/refs') && url.searchParams.has('service')) return true
+  if (p.endsWith('/git-upload-pack') || p.endsWith('/git-receive-pack')) return true
+  return false
+}
+
+async function checkGitAuth(req: IncomingMessage): Promise<boolean> {
+  const header = req.headers.authorization || ''
+  const match = /^Basic\s+(.+)$/i.exec(header)
+  if (!match) return false
+  const [user, pass] = Buffer.from(match[1], 'base64').toString('utf-8').split(':')
+  return verifyUser(user, pass)
+}
+
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
     const p = url.pathname
     const q = url.searchParams
+
+    if (isGitRequest(url)) {
+      if (!(await checkGitAuth(req))) {
+        res.writeHead(401, {
+          'WWW-Authenticate': 'Basic realm="jazz-notes"',
+          'Content-Type': 'text/plain; charset=utf-8',
+        })
+        res.end('Unauthorized')
+        return
+      }
+      const handled = await handleGitSmartHttp(req, res, BARE_REPO)
+      if (handled) return
+    }
 
     if (p.startsWith('/api/')) {
       // /api/note — token auth only, no user/password auth needed
@@ -269,6 +299,7 @@ const server = createServer(async (req, res) => {
 
 if (require.main === module) {
   loadUsers(API_USERS_FILE)
+  ensureDefaultUser().catch((e) => console.error('failed to ensure default git user', e))
   if (existsSync(VAULT)) {
     svc.gitEnsure(VAULT, '').catch((e) => console.error('init failed', e))
     getIndexStore().open(VAULT)

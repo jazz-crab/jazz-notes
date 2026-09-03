@@ -106,6 +106,8 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const [activeIdx, setActiveIdx] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const lastGTime = useRef(0)
   const isMobile = useIsMobile()
 
   const sensors = useSensors(
@@ -154,8 +156,27 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         setShowCreate(true)
         return
       }
+      if (e.key === '/') {
+        e.preventDefault()
+        searchRef.current?.focus()
+        return
+      }
+      if (e.key === 'g') {
+        e.preventDefault()
+        const now = Date.now()
+        if (now - lastGTime.current < 500) {
+          lastGTime.current = 0
+          setActiveIdx(0)
+        } else {
+          lastGTime.current = now
+        }
+        return
+      }
       if (filtered.length === 0) return
-      if (e.key === 'j') {
+      if (e.key === 'G') {
+        e.preventDefault()
+        setActiveIdx(filtered.length - 1)
+      } else if (e.key === 'j') {
         e.preventDefault()
         setActiveIdx((i) => Math.min(i + 1, filtered.length - 1))
       } else if (e.key === 'k') {
@@ -165,7 +186,11 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         e.preventDefault()
         const note = filtered[activeIdx]
         if (note) setConfirmDelete(note.relPath)
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'r') {
+        e.preventDefault()
+        const note = filtered[activeIdx]
+        if (note) setNoteAction({ note, action: 'rename' })
+      } else if (e.key === 'o' || e.key === 'Enter') {
         e.preventDefault()
         const note = filtered[activeIdx]
         if (note) onSelectNote(note.relPath)
@@ -288,6 +313,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
             </button>
             <div style={{ position: 'relative' as const, flex: 1 }}>
               <input
+                ref={searchRef}
                 style={searchStyle(colors)}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

@@ -13,7 +13,7 @@ Legend: `[x] done · [ ] next · [~] deferred`
 - [x] **Nested folders** — folders can nest at any depth; a folder can be moved into another folder or to root via the right-click menu.
 - [x] **Note context menu** — right-click on a note: rename, change date, change color, delete.
 - [x] **Countdown to the next due note** — a live-updating bar at the top of the main screen; hideable via the × or a Settings toggle, the preference is remembered.
-- [ ] **Vim-style hotkeys** — keyboard navigation without mouse: `j`/`k` to move between notes, `h`/`l` to collapse/expand folders, `gg`/`G` to jump to first/last note, `/` to focus search.
+- [x] **Vim-style hotkeys** — keyboard navigation without mouse: `j`/`k` to move between notes, `gg`/`G` to jump to first/last note, `/` to focus search, `r` to rename, `d`/`x` to delete, `n` to create, `Enter`/`o` to open.
 
 ### Correctness & cleanup
 - [x] **Code highlighting languages** — Java, C/C++, PHP, SQL, XML CodeMirror language packages added; highlighting works.
@@ -28,6 +28,8 @@ Legend: `[x] done · [ ] next · [~] deferred`
 - [x] **Tests + CI** — unit tests for the frontmatter parser, i18n, color, debounce, and fonts utilities (Vitest); a GitHub Actions workflow runs tests and the build on every push/PR.
 - [x] **Packaging + beta releases** — Linux (AppImage/deb/pacman) + Windows (NSIS); GitHub Actions builds and publishes releases with ready-to-download binaries on every `v*` tag.
 - [x] **Console-first CLI** — every core operation reachable from the terminal (`list/read/write/create/delete/mkdir/rmdir/mv/git*`), sharing the same typed core (`src/shared/service.ts`) as the Electron IPC and the web server. Tracks issue #7.
+- [ ] **Full UI↔CLI parity** — EVERYTHING doable in the UI must be doable from the terminal with no UI running (rename / meta changes / move / search / folders / settings / sync + server-side git-users via CLI). So `node jazz-notes add-note "..."` creates a note, bindable to a hotkey / cron / integration. See issue #7.
+- [ ] **Standalone native binary** — build a self-contained executable from the same core (Bun `--compile` / electron-builder) that works without Node.js and without any UI, incl. a Windows `.exe`. Install and drive fully from the terminal. See issue #7.
 
 ### Sync & versioning
 - [x] **Git-backed vault** — the notes folder is initialized as a git repository; every autosave (400 ms debounce) and settings change become commits.
@@ -38,7 +40,10 @@ Legend: `[x] done · [ ] next · [~] deferred`
 - [x] **Sync indicator** — green/yellow/red/orange dot in the top-right corner with details on click.
 - [x] **Conflict resolution** — pick local or remote version per conflicting file with preview.
 - [x] **Multi-device onboarding** — share the remote URL, login and token as a QR code or a copyable string; import by scanning or pasting on another device.
-- [ ] **Server-side vault hosting (git smart HTTP)** — the web server does **not** yet serve the vault as a git remote over HTTPS, and the server vault does not auto-sync. This is the missing piece for out-of-the-box multi-device sync. Tracks issue #8.
+- [x] **Auto-sync** — automatic sync 3 seconds after note changes + quick sync on window focus; toggle in Settings.
+- [x] **E2E two-device sync test** — a Vitest e2e test (`e2e/two-device-sync.test.ts`) that drives two independent vaults against a real git remote and verifies create → pull → edit → pull → delete end to end (`npm run test:e2e`).
+- [x] **One-command sync-server installer** — `deploy/install-server.sh` provisions a ready-made sync server (git smart HTTP + web UI + auth) on a systemd VPS in one go: installs Node.js and git, creates the vault and a bare repository with the post-receive hook, writes env and git-users files, and registers the `jazz-notes-web` systemd service. Works from a GitHub release, a local bundle (`JAZZ_BUNDLE_SRC`), or `curl | bash`.
+- [x] **Server-side vault hosting (git smart HTTP)** — the server serves the vault as a git remote over HTTP(s) (`web/git-smart-http.ts`) with per-user Basic auth (git-users), and a post-receive hook lands every push in the working vault, which the web UI then serves. Live at `https://notes.rentgen.su/jazz-notes-vault.git` and exercised end-to-end by the two-device sync test; the whole setup is provisioned by the one-command installer above.
 
 ### Web version
 - [x] **Web version** — the same UI runs in the browser (`web/`): a small Node.js server reuses the app's git and save logic against the same vault.

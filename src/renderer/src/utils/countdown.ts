@@ -29,6 +29,21 @@ export function formatCountdown(ms: number, lang: Lang = 'ru'): string {
   return `${pad(minutes)}:${pad(seconds)}`
 }
 
+type Plural = 'one' | 'few' | 'many'
+
+function pluralCategory(n: number, lang: Lang): Plural {
+  if (lang === 'en') return n === 1 ? 'one' : 'many'
+  const rem10 = n % 10
+  const rem100 = n % 100
+  if (rem10 === 1 && rem100 !== 11) return 'one'
+  if (rem10 >= 2 && rem10 <= 4 && !(rem100 >= 12 && rem100 <= 14)) return 'few'
+  return 'many'
+}
+
+function pluralUnit(unit: 'hour' | 'day', n: number, lang: Lang): string {
+  return t(`timer.${unit}.${pluralCategory(n, lang)}`, lang).replace('{n}', String(n))
+}
+
 export function formatSmartCountdown(ms: number, lang: Lang = 'ru'): string {
   const total = Math.max(0, Math.floor(ms / 1000))
   if (total < 2 * 60) return t('timer.couple.minutes', lang)
@@ -39,5 +54,7 @@ export function formatSmartCountdown(ms: number, lang: Lang = 'ru'): string {
   if (total < 60 * 60) return t('timer.hour', lang)
   if (total < 90 * 60) return t('timer.hour.half', lang)
   if (total < 120 * 60) return t('timer.hours', lang)
-  return formatCountdown(ms, lang)
+  const days = Math.floor(total / 86400)
+  if (days > 0) return pluralUnit('day', days, lang)
+  return pluralUnit('hour', Math.floor(total / 3600), lang)
 }

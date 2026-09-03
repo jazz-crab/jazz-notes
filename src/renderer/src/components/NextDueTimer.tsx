@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNotesStore } from '../stores/notes'
 import { useSettingsStore } from '../stores/settings'
 import { useColors } from '../theme'
-import { localeOf, t } from '../utils/i18n'
+import { t } from '../utils/i18n'
+import { parentOf, leafName } from '../utils/folder'
 import { formatSmartCountdown, nextUpcomingDue } from '../utils/countdown'
 import type React from 'react'
 
@@ -22,15 +23,19 @@ export default function NextDueTimer() {
   const upcoming = nextUpcomingDue(notes, now)
   if (!upcoming || !showCountdown) return null
 
-  const timeOfDay = new Date(upcoming.due).toLocaleTimeString(localeOf(lang), { hour: '2-digit', minute: '2-digit' })
+  const folder = parentOf(upcoming.note.relPath)
   const preview = upcoming.note.body.replace(/^#+\s*/gm, '').replace(/[*~`>-]/g, '').trim().slice(0, 140)
 
   return (
     <div style={pill(colors)}>
       <div style={textBlockStyle}>
         <div style={firstLineStyle}>
-          <span style={timeOfDayStyle(colors)}>{timeOfDay}</span>
           <span style={titleStyle(colors)}>{upcoming.note.title || t('untitled', lang)}</span>
+          {folder && (
+            <span style={folderStyle(colors)} title={folder}>
+              ({leafName(folder)})
+            </span>
+          )}
         </div>
         {preview && <div style={previewStyle(colors)}>{preview}</div>}
       </div>
@@ -55,11 +60,16 @@ const pill = (c: any): React.CSSProperties => ({
   minWidth: 0,
 })
 const textBlockStyle: React.CSSProperties = { flex: 1, minWidth: 0 }
-const firstLineStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 6 }
-const timeOfDayStyle = (c: any): React.CSSProperties => ({
-  fontSize: 12,
-  fontWeight: 700,
-  color: c.fg,
+const firstLineStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  minWidth: 0,
+  overflow: 'hidden',
+}
+const folderStyle = (c: any): React.CSSProperties => ({
+  fontSize: 13,
+  color: c.comment,
   whiteSpace: 'nowrap' as const,
   flexShrink: 0,
 })
@@ -71,7 +81,7 @@ const titleStyle = (c: any): React.CSSProperties => ({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap' as const,
   minWidth: 0,
-  flex: 1,
+  flexShrink: 1,
 })
 const previewStyle = (c: any): React.CSSProperties => ({
   fontSize: 12,

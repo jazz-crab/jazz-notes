@@ -101,3 +101,5 @@ Every feature of the app must be reachable from the console — no function may 
 - Follow the existing code style (existing components, zustand stores, i18n strings in Russian).
 - Don't commit build output (`out/`, `dist/`, `node_modules/`).
 - **Don't create PRs for yourself.** This is a solo project — just commit and push directly to `main`. PRs are only for external contributors.
+- **No emoji in the UI** — only Nerd Font icons: never use emoji/smileys as icons or in labels; use Nerd Font glyphs instead. The UI relies on a Nerd Font being installed.
+- **GitHub text is always in English** — issues, PRs, commits, comments, kanban notes, release notes, etc. Write them in English. Russian is only for dedicated localization files (e.g. `README_ru.md`, `ROADMAP_ru.md`) and for user-facing i18n strings (there Russian is the primary language).

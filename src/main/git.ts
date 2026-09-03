@@ -145,6 +145,17 @@ async function adoptRemoteHead(repoDir: string, theirsOid: string): Promise<void
   await git.checkout({ fs, dir: repoDir, ref: DEFAULT_BRANCH, force: true })
 }
 
+// isomorphic-git's `git.merge` moves HEAD to the merge result but leaves the
+// `main` branch ref at the old commit (HEAD becomes detached) and does not write
+// the working directory. After a successful merge re-point `main` at the merge
+// HEAD and force-checkout it so the pulled files land on disk and the branch is
+// attached again (same materialisation adoptRemoteHead relies on).
+async function attachHeadToBranch(repoDir: string): Promise<void> {
+  const headOid = await git.resolveRef({ fs, dir: repoDir, ref: 'HEAD' })
+  await git.writeRef({ fs, dir: repoDir, ref: `refs/heads/${DEFAULT_BRANCH}`, value: headOid, force: true })
+  await git.checkout({ fs, dir: repoDir, ref: DEFAULT_BRANCH, force: true })
+}
+
 export async function sync(repoDir: string, auth?: GitAuth): Promise<SyncResult> {
   try {
     await commitAll(repoDir)
@@ -241,6 +252,7 @@ export async function sync(repoDir: string, auth?: GitAuth): Promise<SyncResult>
   if (mergeBase === oursOid) {
     try {
       await git.merge({ fs, dir: repoDir, ours: 'HEAD', theirs: remoteRef(), fastForwardOnly: true })
+      await attachHeadToBranch(repoDir)
       return { status: 'synced', merged: false, pushed: 0, pulled: 1 }
     } catch (e) {
       return { status: 'error', error: describeError(e) }
@@ -249,6 +261,7 @@ export async function sync(repoDir: string, auth?: GitAuth): Promise<SyncResult>
 
   try {
     await git.merge({ fs, dir: repoDir, ours: 'HEAD', theirs: remoteRef(), abortOnConflict: false })
+    await attachHeadToBranch(repoDir)
     await push(repoDir, auth)
     return { status: 'synced', merged: true, pushed: 1, pulled: 1 }
   } catch (e) {

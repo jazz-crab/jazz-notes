@@ -46,7 +46,12 @@ describe('syncConfig', () => {
     expect(decodeSyncConfig('')).toBeNull()
     expect(decodeSyncConfig('hello')).toBeNull()
     expect(decodeSyncConfig('jazznote://sync')).toBeNull()
-    expect(decodeSyncConfig('https://x|vault|short')).toBeNull()
     expect(decodeSyncConfig(`${SYNC_CONFIG_PREFIX}?url=x&token=abc`)).toBeNull()
+  })
+
+  it('accepts arbitrary non-empty passwords', () => {
+    expect(decodeSyncConfig('https://x|vault|short')).toEqual({ url: 'https://x', user: 'vault', token: 'short' })
+    expect(decodeSyncConfig('https://x|vault|1991')).toEqual({ url: 'https://x', user: 'vault', token: '1991' })
+    expect(decodeSyncConfig(`${SYNC_CONFIG_PREFIX}?url=https://x&user=vault&token=1991`)).toEqual({ url: 'https://x', user: 'vault', token: '1991' })
   })
 })

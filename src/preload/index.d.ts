@@ -35,6 +35,7 @@ export interface JazzAPI {
   gitShow: (repoDir: string, relPath: string, hash: string) => Promise<string | null>
   gitRestore: (repoDir: string, relPath: string, hash: string) => Promise<string | null>
   onNotesChanged: (cb: (relPath: string) => void) => () => void
+  onAppFocus: (cb: () => void) => () => void
 }
 
 declare global {

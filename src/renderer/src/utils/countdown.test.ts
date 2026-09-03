@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCountdown, nextUpcomingDue } from './countdown'
+import { formatCountdown, formatSmartCountdown, nextUpcomingDue } from './countdown'
 import type { Note } from '../stores/notes'
 
 const now = Date.now()
@@ -60,5 +60,45 @@ describe('formatCountdown', () => {
 
   it('clamps negative input to zero', () => {
     expect(formatCountdown(-5_000)).toBe('00:00')
+  })
+})
+
+describe('formatSmartCountdown', () => {
+  it('localizes hours in russian', () => {
+    expect(formatSmartCountdown(2 * 3600_000, 'ru')).toBe('2 часа')
+    expect(formatSmartCountdown(5 * 3600_000, 'ru')).toBe('5 часов')
+    expect(formatSmartCountdown(23 * 3600_000, 'ru')).toBe('23 часа')
+    expect(formatSmartCountdown(23 * 3600_000 + 59 * 60_000 + 59_000, 'ru')).toBe('23 часа')
+  })
+
+  it('localizes hours in english', () => {
+    expect(formatSmartCountdown(2 * 3600_000, 'en')).toBe('2 hours')
+    expect(formatSmartCountdown(23 * 3600_000, 'en')).toBe('23 hours')
+  })
+
+  it('localizes days in russian', () => {
+    expect(formatSmartCountdown(24 * 3600_000, 'ru')).toBe('1 день')
+    expect(formatSmartCountdown(2 * 24 * 3600_000, 'ru')).toBe('2 дня')
+    expect(formatSmartCountdown(5 * 24 * 3600_000, 'ru')).toBe('5 дней')
+    expect(formatSmartCountdown(42 * 24 * 3600_000, 'ru')).toBe('42 дня')
+    expect(formatSmartCountdown(42 * 24 * 3600_000 + 18 * 3600_000, 'ru')).toBe('42 дня')
+  })
+
+  it('localizes days in english', () => {
+    expect(formatSmartCountdown(24 * 3600_000, 'en')).toBe('1 day')
+    expect(formatSmartCountdown(5 * 24 * 3600_000, 'en')).toBe('5 days')
+    expect(formatSmartCountdown(42 * 24 * 3600_000, 'en')).toBe('42 days')
+  })
+
+  it('never falls back to raw countdown for long periods', () => {
+    expect(formatSmartCountdown(42 * 24 * 3600_000 + 18 * 3600_000 + 59 * 60_000 + 37_000, 'ru')).not.toBe(
+      '42д 18:59:37'
+    )
+  })
+
+  it('keeps short ranges smart', () => {
+    expect(formatSmartCountdown(60_000, 'ru')).toBe('Пара минут')
+    expect(formatSmartCountdown(240_000, 'ru')).toBe('5 минут')
+    expect(formatSmartCountdown(7_199_000, 'ru')).toBe('2 часа')
   })
 })

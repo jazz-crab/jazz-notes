@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mkdtemp, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -14,6 +14,44 @@ import {
   resolveConflicts,
   isOfflineError,
 } from './git'
+
+// ---- local-remote stub for the pull regression test -------------------------
+// sync() fetches over HTTP, which cannot be exercised hermetically. We override
+// only `git.fetch` with a stub that copies the object database of a local
+// "remote" repo into the device repo and points refs/remotes/origin/main at the
+// remote's main. Everything else in isomorphic-git stays real, so the merge /
+// checkout paths of sync() are exercised for real. When `fetchStub.remote` is
+// unset the stub delegates to the real fetch, keeping the other tests intact.
+const fetchStub = vi.hoisted(() => ({ remote: '' }))
+
+vi.mock('isomorphic-git', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('isomorphic-git')>()
+  const real = (actual as unknown as { default?: Record<string, unknown> }).default ?? actual
+  const realFetch = real.fetch as (opts: Record<string, unknown>) => Promise<unknown>
+  const fakeFetch = async (opts: Record<string, unknown>): Promise<unknown> => {
+    const remoteDir = fetchStub.remote
+    if (!remoteDir) return realFetch(opts)
+    const src = join(remoteDir, '.git', 'objects')
+    if (fs.existsSync(src)) {
+      await fs.promises.cp(src, join(opts.dir as string, '.git', 'objects'), { recursive: true, force: true })
+    }
+    const remoteMain = await (real.resolveRef as (o: Record<string, unknown>) => Promise<string>)({
+      fs: opts.fs,
+      dir: remoteDir,
+      ref: 'refs/heads/main',
+    }).catch(() => null)
+    if (remoteMain) {
+      await (real.writeRef as (o: Record<string, unknown>) => Promise<void>)({
+        fs: opts.fs,
+        dir: opts.dir,
+        ref: 'refs/remotes/origin/main',
+        value: remoteMain,
+        force: true,
+      })
+    }
+  }
+  return { ...actual, default: { ...real, fetch: fakeFetch } }
+})
 
 let dir: string
 
@@ -186,5 +224,59 @@ describe('conflict resolution', () => {
     expect(result.status).toBe('synced')
     expect(fs.readFileSync(join(dir, 'a.md'), 'utf-8')).toBe('remote\n')
     expect(AUTHOR).toBeTruthy()
+  })
+})
+
+describe('sync pull materialises files', () => {
+  it('fast-forward pull lands files on disk and keeps the branch attached', async () => {
+    const remoteDir = await mkdtemp(join(tmpdir(), 'jazz-notes-remote-'))
+    const deviceDir = await mkdtemp(join(tmpdir(), 'jazz-notes-pull-'))
+    fetchStub.remote = remoteDir
+    try {
+      // Seed the remote with a first commit (fresh history).
+      await ensureRepo(remoteDir, '')
+      fs.writeFileSync(join(remoteDir, 'note.md'), 'v1\n')
+      await commitAll(remoteDir)
+      const remoteMainV1 = await git.resolveRef({ fs, dir: remoteDir, ref: 'refs/heads/main' })
+
+      // Fresh device: first sync pulls (adoptRemoteHead path).
+      await ensureRepo(deviceDir, remoteDir)
+      const first = await sync(deviceDir)
+      expect(first.status).toBe('synced')
+      expect(first.pulled).toBeGreaterThan(0)
+      expect(fs.readFileSync(join(deviceDir, 'note.md'), 'utf-8')).toBe('v1\n')
+      const head1 = await git.resolveRef({ fs, dir: deviceDir, ref: 'HEAD' })
+      const main1 = await git.resolveRef({ fs, dir: deviceDir, ref: 'refs/heads/main' })
+      expect(main1).toBe(remoteMainV1)
+      expect(head1).toBe(main1)
+
+      // Remote advances with a second commit. A pull must materialise the new
+      // content on disk and move the local branch (regression: isomorphic-git's
+      // ff-merge left HEAD detached and the working directory stale).
+      fs.writeFileSync(join(remoteDir, 'note.md'), 'v2 remote\n')
+      await commitAll(remoteDir)
+      const remoteMainV2 = await git.resolveRef({ fs, dir: remoteDir, ref: 'refs/heads/main' })
+
+      const second = await sync(deviceDir)
+      expect(second.status).toBe('synced')
+      expect(second.pulled).toBeGreaterThan(0)
+      expect(fs.readFileSync(join(deviceDir, 'note.md'), 'utf-8')).toBe('v2 remote\n')
+      const head2 = await git.resolveRef({ fs, dir: deviceDir, ref: 'HEAD' })
+      const main2 = await git.resolveRef({ fs, dir: deviceDir, ref: 'refs/heads/main' })
+      expect(main2).toBe(remoteMainV2)
+      expect(head2).toBe(main2)
+
+      // Remote deletes the note; the pull must remove it from disk too.
+      fs.rmSync(join(remoteDir, 'note.md'))
+      await commitAll(remoteDir)
+      const third = await sync(deviceDir)
+      expect(third.status).toBe('synced')
+      expect(third.pulled).toBeGreaterThan(0)
+      expect(fs.existsSync(join(deviceDir, 'note.md'))).toBe(false)
+    } finally {
+      fetchStub.remote = ''
+      await rm(remoteDir, { recursive: true, force: true })
+      await rm(deviceDir, { recursive: true, force: true })
+    }
   })
 })

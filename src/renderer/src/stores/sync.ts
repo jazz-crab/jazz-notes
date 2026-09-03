@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { useSettingsStore } from './settings'
 import { useNotesStore } from './notes'
+import { debounce } from '../utils/debounce'
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'offline' | 'error' | 'conflict'
 
@@ -17,6 +18,8 @@ interface SyncState {
   syncNow: () => Promise<void>
   resolveConflict: (picks: Record<string, ResolvePick>) => Promise<void>
   dismissConflict: () => void
+  triggerAutoSync: () => void
+  setupAutoSync: () => () => void
 }
 
 async function resolveVaultPath(): Promise<string> {
@@ -57,6 +60,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       // git not available — stay idle, indicator hidden
     }
     await get().syncNow()
+    get().setupAutoSync()
   },
 
   syncNow: async () => {
@@ -94,4 +98,30 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   },
 
   dismissConflict: () => set({ status: 'synced', conflictedFiles: [], picks: {} }),
+
+  triggerAutoSync: () => {
+    const { syncRemote, autoSync } = useSettingsStore.getState()
+    if (!autoSync || !syncRemote) return
+    if (get().status === 'syncing') return
+    void get().syncNow()
+  },
+
+  setupAutoSync: () => {
+    const unsubNotes = window.jazz.onNotesChanged(() => {
+      debouncedAutoSync()
+    })
+
+    const unsubFocus = window.jazz.onAppFocus(() => {
+      get().triggerAutoSync()
+    })
+
+    return () => {
+      unsubNotes()
+      unsubFocus()
+    }
+  },
 }))
+
+const debouncedAutoSync = debounce(() => {
+  useSyncStore.getState().triggerAutoSync()
+}, 3000)

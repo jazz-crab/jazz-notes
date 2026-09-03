@@ -39,7 +39,8 @@ Inspired by [Obsidian](https://obsidian.md): a plain-Markdown vault with inline 
 - **Git-backed vault** — the notes folder is a git repository; every autosave becomes a commit, so nothing is lost
 - **No system git required** — all git operations are handled in-process by a pure-JS engine (isomorphic-git), so the app works on any machine without installing anything
 - **Per-note version history** — a history button in the editor lists past versions; preview any version and restore it (restores are new commits, nothing is rewritten)
-- **Sync engine** — push/pull/merge against a git remote (URL, login and token editable in Settings). Non-conflicting changes merge automatically. You point it at a remote you host yourself (e.g. a GitHub repo); JazzNote does not host a vault server yet — see [ROADMAP](ROADMAP.md) (issue #8)
+- **Sync engine** — push/pull/merge against a git remote (URL, login and token editable in Settings). Non-conflicting changes merge automatically. It works with any git remote you host yourself (e.g. a GitHub repo); to host the vault on your own JazzNote server instead, one command sets one up — see the Self-hosted sync server block under [Server deployment](#server-deployment) and `deploy/install-server.sh`
+- **Auto-sync** — syncs automatically 3 seconds after the last save when notes change; a quick pull/merge runs when the app window regains focus; toggleable in Settings (Sync), only active when a remote server is configured
 - **Multi-device onboarding** — share the server URL, login and token as a **QR code** or a copyable string; on another device scan the QR or paste the string to connect
 - **Sync indicator** — a dot in the top-right corner: green = synced, yellow = server unavailable, red = error, orange = conflicts; click for details, a manual sync button and conflict resolution
 - **Conflict resolution** — when the same file was changed on both sides, pick local or server version per file (with a preview) and apply
@@ -47,6 +48,7 @@ Inspired by [Obsidian](https://obsidian.md): a plain-Markdown vault with inline 
 ### Appearance
 - **3 palettes** — TokyoNight, Everforest, Catppuccin — each with **dark and light** variants
 - **5 Monaspace fonts** (Argon, Neon, Krypton, Xenon, Radon) + Nerd Font icons
+- **UI zoom** — scale the whole interface from 75% to 200%: `Ctrl/Cmd` + `+`/`-` zooms in/out, `Ctrl/Cmd` + `0` resets to 100%, `Ctrl` + mouse wheel zooms too; adjustable in Settings → Appearance and persisted
 - Per-note **color** and **date** pickers; overdue dates turn red
 - **Bilingual UI** — Русский / English, switchable in Settings and persisted
 
@@ -81,6 +83,18 @@ Unit tests (Vitest):
 npm run test
 ```
 
+End-to-end sync test (Vitest) — drives two independent vaults against a real git
+remote (the rentgen server by default) and verifies create → pull → edit → pull → delete:
+
+```bash
+npm run test:e2e
+```
+
+It targets `https://notes.rentgen.su/jazz-notes-vault.git` with the configured
+credentials; point it elsewhere (and keep prod clean) via the env overrides
+`JAZZ_E2E_REMOTE`, `JAZZ_E2E_USER` and `JAZZ_E2E_PASS`. The e2e suite is excluded
+from `npm run test`.
+
 ## How notes are stored
 
 Notes are plain `.md` files in the vault (the path is chosen in Settings or via `JAZZ_VAULT` for CLI/web), optionally nested in folders. Each file carries a small frontmatter block:
@@ -108,7 +122,7 @@ Body text…
 
 Supported frontmatter keys: `title`, `id`, `priority` (0–4), `due`, `color`, `created`, `updated`, `tags`. The parser handles quoted values with escaping, unquoted scalars, and `---` lines inside the body.
 
-App preferences (palette, theme, language, font, notes vault path) are persisted in `localStorage` under `jazz-settings`.
+App preferences (palette, theme, language, font, UI zoom, notes vault path) are persisted in `localStorage` under `jazz-settings`.
 
 ## Web (browser) version
 
@@ -171,15 +185,23 @@ Users are read from a JSON file of `user` → SHA-256(password) pairs, set via t
 
 ### Server deployment
 
-Every release ships a self-contained server bundle — `jazz-notes-web-<version>.tar.gz` (available on the [Releases](https://github.com/jazz-crab/jazz-note/releases) page). It needs **only Node.js**; all other dependencies are compiled into `server.js`. The bundle contains `server.js`, the static client (`dist/`), and an `install.sh` that sets everything up on a systemd host:
+Every release ships a self-contained server bundle — `jazz-note-server-<version>.tar.gz` (available on the [Releases](https://github.com/jazz-crab/jazz-note/releases) page). It needs **only Node.js**; all other dependencies are compiled into `server.js`. The bundle contains `server.js`, the static client (`dist/`), and two installers: `install.sh` for a plain web deployment (web UI + `POST /api/note`) and `install-server.sh` for the full sync server described below. `install.sh` sets everything up on a systemd host:
 
 ```bash
-tar -xzf jazz-notes-web-<version>.tar.gz
-cd jazz-notes-web-<version>
+tar -xzf jazz-note-server-<version>.tar.gz
+cd jazz-note-server-<version>
 ./install.sh
 ```
 
 `install.sh` installs Node.js via apt if missing, creates the vault (`~/jazz-notes-vault`), writes an env file with a generated `JAZZ_NOTE_TOKEN`, and registers a `jazz-notes-web` systemd service. Running it again upgrades the bundle while reusing the existing vault and env file.
+
+**Self-hosted sync server.** One command turns any Debian/Ubuntu VPS with systemd into a full JazzNote sync server — the vault is served over **git smart HTTP** (fetch/push with per-user passwords) next to the web UI:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jazz-crab/jazz-notes/main/deploy/install-server.sh | bash
+```
+
+`deploy/install-server.sh` installs Node.js and git, creates the vault and a bare repository with a post-receive hook (pushes land in the vault immediately), writes an env file with a generated API token, creates a git-access user, and registers a `jazz-notes-web` systemd service. The output prints the web UI URL, the sync remote (`http://host:port/<name>.git`) and the credentials to enter on each device under **Settings → Sync**. Re-running it upgrades the server while keeping the vault, users and token. Full reference and all variables: `deploy/README-server.md`.
 
 Manual run (any host with Node.js):
 
@@ -217,6 +239,13 @@ node dist/cli.js list   # or invoke the bundle directly
 | `git history [--rel <rel>] [--limit <n>]` | Show git history |
 | `git show <rel> <hash>` | Show a file at a given commit |
 | `git restore <rel> <hash>` | Restore a file version (new commit) |
+| `git-users list` | List git smart HTTP users on the server |
+| `git-users add <login> [--password <p>]` | Add a git smart HTTP user (password is read from stdin if `--password` is omitted) |
+| `git-users remove <login>` | Remove a git smart HTTP user |
+| `git-users set-password <login> [--password <p>]` | Change a git smart HTTP user's password (read from stdin if `--password` is omitted) |
+| `git-users rename <old> <new>` | Rename a git smart HTTP user |
+
+`git-users` commands manage the git smart HTTP users of the server deployment (run them on the server host); the users file location is set via `JAZZ_GIT_USERS_FILE`.
 
 Examples:
 
