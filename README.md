@@ -129,6 +129,7 @@ The server (run with `node web/dist-server/server.js`) exposes the vault via the
 | `JAZZ_VAULT` | none (required) | Path to the notes vault. **Required** — the server refuses to start without it. |
 | `PORT` | `3180` | HTTP port |
 | `JAZZ_WEB_ROOT` | `web/dist` | Static client root |
+| `JAZZ_API_USERS` | `~/.config/jazz-notes-api-users.json` | JSON file of `user` → SHA-256(password) for `/api/*` auth (all except `/api/note`) |
 
 Unlike the desktop app, the server does **not** auto-create the vault: if the `JAZZ_VAULT` folder does not exist, the UI shows a «Notes folder not found» message and blocks note creation until the folder is created or `JAZZ_VAULT` points to an existing directory.
 
@@ -143,6 +144,30 @@ curl -H 'X-Auth-Token: your-token' -H 'Content-Type: application/json' \
 ```
 
 An array of note objects is accepted too. Allowed fields: `title`, `text`, `folder`, `due`, `color`, `priority`, `tags`. Notes go through the same saver as the app: IDs are auto-assigned, frontmatter is generated, autosave commits are scheduled.
+
+### API authentication
+
+Every `/api/*` endpoint **except `POST /api/note`** requires a user/password check. Credentials can be provided either as an HTTP Basic `Authorization` header or as `user` + `password` fields in the JSON body (the fields are stripped before the payload is processed):
+
+```bash
+# Basic header
+curl -u jc:secret https://notes.example.com/api/tree
+
+# user/password in the body
+curl -X POST https://notes.example.com/api/create \
+  -H 'Content-Type: application/json' \
+  -d '{"user":"jc","password":"secret","title":"Idea","text":"body","folder":"inbox"}'
+```
+
+Users are read from a JSON file of `user` → SHA-256(password) pairs, set via the env var `JAZZ_API_USERS` (defaults to `~/.config/jazz-notes-api-users.json`):
+
+```json
+{ "jc": "<sha256 hex of the password>" }
+```
+
+### Android wrapper app
+
+`android/` contains a minimal WebView wrapper that opens the web version in a full-screen Android app. Build it with the Android SDK/Gradle and the usual `./gradlew assembleRelease`; it just loads the configured server URL.
 
 ### Server deployment
 

@@ -47,6 +47,19 @@ node server.js   # listens on PORT (default 3180)
 | `JAZZ_VAULT` | `~/jazz-notes-vault` | Vault directory |
 | `JAZZ_WEB_ROOT` | `./dist` | Static client root |
 | `JAZZ_NOTE_TOKEN` | *(empty)* | Token for `POST /api/note`; empty disables the endpoint |
+| `JAZZ_API_USERS` | `~/.config/jazz-notes-api-users.json` | JSON file of `user` → SHA-256(password); guards all `/api/*` except `/api/note` |
+
+## API authentication (all endpoints except /api/note)
+
+Every other `/api/*` endpoint requires credentials, either as an HTTP Basic
+`Authorization` header or as `user` + `password` in the JSON body:
+
+```bash
+curl -u jc:secret http://host:3180/api/tree
+curl -X POST http://host:3180/api/create \
+  -H 'Content-Type: application/json' \
+  -d '{"user":"jc","password":"secret","title":"Idea","text":"body","folder":"inbox"}'
+```
 
 ## Creating notes over HTTP
 

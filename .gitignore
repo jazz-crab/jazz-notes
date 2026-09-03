@@ -11,3 +11,10 @@ jazz-notes/
 # web build output
 web/dist/
 web/dist-server/
+
+# android build output and secrets
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/*.keystore

@@ -6,6 +6,8 @@ import * as svc from '../src/shared/service'
 import { parseNote, type NoteDraft } from '../src/shared/note'
 import { getIndexStore } from './index-store-web'
 import { handleNotePost } from './note-receiver'
+import { authenticate, loadUsers } from './auth'
+
 const VAULT = process.env.JAZZ_VAULT || ''
 if (!VAULT) {
   console.error(
@@ -19,6 +21,9 @@ const ROOT =
   process.env.JAZZ_WEB_ROOT ||
   [join(__dirname, 'dist'), join(__dirname, '..', 'dist')].find(existsSync) ||
   join(__dirname, 'dist')
+const API_USERS_FILE =
+  process.env.JAZZ_API_USERS ||
+  join(process.env.HOME || '/home/jc', '.config', 'jazz-notes-api-users.json')
 
 let rev = 0
 let commitTimer: ReturnType<typeof setTimeout> | null = null
@@ -49,14 +54,6 @@ async function reindexNote(relPath: string) {
   } catch {
     // unreadable file — leave the index as is
   }
-}
-
-async function readJson(req: IncomingMessage): Promise<unknown> {
-  const chunks: Buffer[] = []
-  for await (const chunk of req) chunks.push(chunk as Buffer)
-  const raw = Buffer.concat(chunks).toString('utf-8')
-  if (!raw) return {}
-  return JSON.parse(raw)
 }
 
 function send(res: ServerResponse, code: number, body: unknown) {
@@ -117,6 +114,16 @@ const server = createServer(async (req, res) => {
     const q = url.searchParams
 
     if (p.startsWith('/api/')) {
+      // /api/note — token auth only, no user/password auth needed
+      if (req.method === 'POST' && p === '/api/note') {
+        return handleNotePost(req, res, VAULT, scheduleCommit)
+      }
+
+      // All other /api/* — require user+password auth
+      const auth = await authenticate(req, res)
+      if (!auth) return // 401 already sent
+      const body = auth.body
+
       if (req.method === 'GET' && p === '/api/path') {
         return send(res, 200, { path: VAULT })
       }
@@ -142,7 +149,6 @@ const server = createServer(async (req, res) => {
         return send(res, 200, { data: await readHistory() })
       }
       if (req.method === 'POST' && p === '/api/write') {
-        const body = (await readJson(req)) as Record<string, unknown>
         if (typeof body.content === 'string' && body.rel) {
           await svc.writeRaw(VAULT, String(body.rel), body.content, scheduleCommit)
           await reindexNote(String(body.rel))
@@ -165,7 +171,6 @@ const server = createServer(async (req, res) => {
         return send(res, 200, { saved: [saved] })
       }
       if (req.method === 'POST' && p === '/api/create') {
-        const body = (await readJson(req)) as Record<string, unknown>
         if (typeof body.content === 'string' && body.rel) {
           await svc.writeRaw(VAULT, String(body.rel), body.content, scheduleCommit)
           await reindexNote(String(body.rel))
@@ -178,62 +183,59 @@ const server = createServer(async (req, res) => {
         await reindexNote(saved.relPath)
         return send(res, 200, { saved: [saved] })
       }
-      if (req.method === 'POST' && p === '/api/note') {
-        return handleNotePost(req, res, VAULT, scheduleCommit)
-      }
       if (req.method === 'POST' && p === '/api/delete') {
-        const { rel } = (await readJson(req)) as { rel: string }
+        const { rel } = body as { rel: string }
         await svc.deleteFile(VAULT, rel)
         getIndexStore().remove(rel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/mkdir') {
-        const { rel } = (await readJson(req)) as { rel: string }
+        const { rel } = body as { rel: string }
         await svc.mkdir(VAULT, rel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/rmdir') {
-        const { rel } = (await readJson(req)) as { rel: string }
+        const { rel } = body as { rel: string }
         await svc.rmdir(VAULT, rel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/rename') {
-        const { rel, newRel } = (await readJson(req)) as { rel: string; newRel: string }
+        const { rel, newRel } = body as { rel: string; newRel: string }
         await svc.renameFile(VAULT, rel, newRel)
         getIndexStore().rename(rel, newRel)
         scheduleCommit()
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/history') {
-        const { data } = (await readJson(req)) as { data: unknown }
+        const { data } = body as { data: unknown }
         await writeFile(HISTORY_PATH, JSON.stringify(data), 'utf-8')
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/git/ensure') {
-        const { remote } = (await readJson(req)) as { remote: string }
+        const { remote } = body as { remote: string }
         await svc.gitEnsure(VAULT, remote)
         return send(res, 200, { ok: true })
       }
       if (req.method === 'POST' && p === '/api/git/commit') {
-        const { message } = (await readJson(req)) as { message?: string }
+        const { message } = body as { message?: string }
         const ok = await svc.gitCommit(VAULT, message || 'autosave')
         return send(res, 200, { ok })
       }
       if (req.method === 'POST' && p === '/api/git/sync') {
-        const { auth } = (await readJson(req)) as { auth?: svc.GitAuth }
-        const result: svc.SyncResult = await svc.gitSync(VAULT, auth)
+        const { auth: gitAuth } = body as { auth?: svc.GitAuth }
+        const result: svc.SyncResult = await svc.gitSync(VAULT, gitAuth)
         rev++
         return send(res, 200, result)
       }
       if (req.method === 'POST' && p === '/api/git/resolve') {
-        const { picks, auth } = (await readJson(req)) as {
+        const { picks, auth: gitAuth } = body as {
           picks: Array<{ file: string; source: 'local' | 'remote' }>
           auth?: svc.GitAuth
         }
-        const result: svc.SyncResult = await svc.gitResolveConflicts(VAULT, picks, auth)
+        const result: svc.SyncResult = await svc.gitResolveConflicts(VAULT, picks, gitAuth)
         rev++
         return send(res, 200, result)
       }
@@ -250,7 +252,7 @@ const server = createServer(async (req, res) => {
         return send(res, 200, { content })
       }
       if (req.method === 'POST' && p === '/api/git/restore') {
-        const { rel, hash } = (await readJson(req)) as { rel: string; hash: string }
+        const { rel, hash } = body as { rel: string; hash: string }
         const content = await svc.gitRestore(VAULT, rel, hash)
         rev++
         return send(res, 200, { content })
@@ -266,6 +268,7 @@ const server = createServer(async (req, res) => {
 })
 
 if (require.main === module) {
+  loadUsers(API_USERS_FILE)
   if (existsSync(VAULT)) {
     svc.gitEnsure(VAULT, '').catch((e) => console.error('init failed', e))
     getIndexStore().open(VAULT)

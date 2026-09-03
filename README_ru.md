@@ -129,6 +129,7 @@ npm run web:preview # предпросмотр собранного клиент
 | `JAZZ_VAULT` | нет (обязателен) | Путь к папке заметок. **Обязателен** — без него сервер не стартует. |
 | `PORT` | `3180` | HTTP-порт |
 | `JAZZ_WEB_ROOT` | `web/dist` | Корень статического клиента |
+| `JAZZ_API_USERS` | `~/.config/jazz-notes-api-users.json` | JSON-файл вида `user` → SHA-256(пароль) для авторизации `/api/*` (кроме `/api/note`) |
 
 В отличие от десктопного приложения, сервер **не** создаёт хранилище автоматически: если папка `JAZZ_VAULT` не существует, UI показывает сообщение «Папка заметок не найдена» и блокирует создание заметок, пока папка не появится или `JAZZ_VAULT` не будет указывать на существующую директорию.
 
@@ -143,6 +144,30 @@ curl -H 'X-Auth-Token: ваш-токен' -H 'Content-Type: application/json' \
 ```
 
 Можно передать и массив объектов. Допустимые поля: `title`, `text`, `folder`, `due`, `color`, `priority`, `tags`. Заметки проходят через тот же saver, что и приложение: ID назначаются автоматически, frontmatter генерируется, автосохранение коммитится.
+
+### Аутентификация API
+
+Каждый endpoint `/api/*`, **кроме** `POST /api/note`, требует проверки пользователя. Учётные данные передаются либо заголовком HTTP Basic `Authorization`, либо полями `user` и `password` в JSON-теле (поля удаляются до обработки payload):
+
+```bash
+# заголовок Basic
+curl -u jc:секрет https://notes.example.com/api/tree
+
+# user/password в теле
+curl -X POST https://notes.example.com/api/create \
+  -H 'Content-Type: application/json' \
+  -d '{"user":"jc","password":"секрет","title":"Идея","text":"тело","folder":"inbox"}'
+```
+
+Пользователи читаются из JSON-файла вида `user` → SHA-256(пароль), путь задаётся переменной окружения `JAZZ_API_USERS` (по умолчанию `~/.config/jazz-notes-api-users.json`):
+
+```json
+{ "jc": "<sha256 hex от пароля>" }
+```
+
+### Android-обёртка
+
+В `android/` — минимальное Android-приложение-обёртка: полноэкранный WebView открывает веб-версию. Сборка обычным Android SDK/Gradle (`./gradlew assembleRelease`); приложение просто загружает настроенный URL сервера.
 
 ### Развёртывание на сервере
 
