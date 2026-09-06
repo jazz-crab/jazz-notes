@@ -74,7 +74,7 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onHover, o
         transform: CSS.Transform.toString(transform),
         opacity: isDragging ? 0.5 : 1,
         touchAction: 'none',
-        width: isActive ? '100%' : '96%',
+        width: isActive ? '100%' : '98%',
         marginLeft: isActive ? 0 : 'auto',
       }}
     >
