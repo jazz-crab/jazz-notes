@@ -23,6 +23,7 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
   const noteColorMap = useNoteColors()
   const noteColor = note.meta.color ? noteColorMap[note.meta.color] : null
   const due = note.meta.due ? new Date(note.meta.due) : null
+  const movedFrom = note.meta.movedFrom
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000)
@@ -67,6 +68,7 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
             </span>
           )}
           {countdown && <span style={countdownStyle(colors)}>{countdown}</span>}
+          {movedFrom && <span style={movedFromStyle(colors)}>{t('moved.from', lang) + ' ' + movedFrom}</span>}
           {note.meta.updated && (
             <span style={updatedStyle(colors)}>
               {new Date(note.meta.updated).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' })}
@@ -130,6 +132,7 @@ const previewStyle = (c: any) => ({
 const dueStyle = (_c: any) => ({ color: 'var(--yellow)' })
 const overdueStyle = (_c: any) => ({ color: 'var(--red)', fontWeight: 600 })
 const countdownStyle = (c: any) => ({ color: c.orange, fontWeight: 700 })
+const movedFromStyle = (c: any) => ({ color: c.comment })
 const updatedStyle = (c: any) => ({ color: c.comment })
 const pillStyle = (c: any) => ({
   fontSize: 10,

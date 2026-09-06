@@ -10,6 +10,7 @@ import Sidebar from '../components/Sidebar'
 import NoteCard from '../components/NoteCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import NextDueTimer from '../components/NextDueTimer'
+import CalendarView from '../components/CalendarView'
 import SyncIndicator from '../components/SyncIndicator'
 import ContextMenu from '../components/ContextMenu'
 import Modal from '../components/Modal'
@@ -275,6 +276,10 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
 
   const closeAction = () => setNoteAction(null)
 
+  const showCalendar =
+    !searchQuery &&
+    (sidebarSelection.type === 'all' || sidebarSelection.type === 'folder')
+
   const sortOptions: Array<{ value: SortBy; label: string }> = [
     { value: 'date', label: t('sort.by.date', lang) },
     { value: 'due', label: t('sort.by.due', lang) },
@@ -341,6 +346,9 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
           <SyncIndicator />
         </div>
 
+        {showCalendar ? (
+          <CalendarView onSelectNote={onSelectNote} />
+        ) : (
         <div ref={listRef} style={{ ...listStyle, ...(isMobile ? { padding: '6px 12px' } : {}) }}>
           {loading && <div style={loadingStyle(colors)}>{t('loading', lang)}</div>}
           {!loading && filtered.length === 0 && (
@@ -377,6 +385,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
             />
           ))}
         </div>
+        )}
       </div>
 
       {menu && (
@@ -387,7 +396,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
           items={[
             { icon: '✓', iconColor: '#9ece6a', label: '', onClick: () => void updateNoteMetaByPath(menu.note.relPath, { done: true }) },
             { icon: '🕐', iconColor: '#ff9e64', label: '', onClick: () => setNoteAction({ note: menu.note, action: 'date' }) },
-            { icon: '✕', iconColor: '#848597', label: '', onClick: () => void updateNoteMetaByPath(menu.note.relPath, { done: false, due: undefined }) },
+            { icon: '✕', iconColor: '#848597', label: '', onClick: () => void updateNoteMetaByPath(menu.note.relPath, { done: false, due: undefined, movedFrom: undefined }) },
             { label: t('context.rename', lang), onClick: () => setNoteAction({ note: menu.note, action: 'rename' }) },
             { label: t('context.move.note', lang), onClick: () => setMovingNote(menu.note) },
             { label: t('context.change.date', lang), onClick: () => setNoteAction({ note: menu.note, action: 'date' }) },
@@ -456,7 +465,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
           <DatePicker
             date={noteAction.note.meta.due || ''}
             onDateChange={(d) => {
-              void updateNoteMetaByPath(noteAction.note.relPath, { due: d || undefined })
+              void updateNoteMetaByPath(noteAction.note.relPath, { due: d || undefined, movedFrom: undefined })
             }}
             onDone={closeAction}
           />

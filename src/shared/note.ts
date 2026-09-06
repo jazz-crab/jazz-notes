@@ -8,6 +8,7 @@ export interface NoteMeta {
   created?: string
   updated?: string
   tags?: string[]
+  movedFrom?: string
 }
 
 export interface NoteData {
@@ -25,6 +26,7 @@ export interface NoteDraft {
   priority?: 0 | 1 | 2 | 3 | 4
   done?: boolean
   tags?: string[]
+  movedFrom?: string
 }
 
 export interface SavedNoteInfo {
@@ -103,6 +105,7 @@ export function parseNote(raw: string): NoteData {
     if (v.created !== undefined) meta.created = unquote(v.created)
     if (v.updated !== undefined) meta.updated = unquote(v.updated)
     if (v.tags !== undefined) meta.tags = parseTags(v.tags)
+    if (v.movedFrom !== undefined) meta.movedFrom = unquote(v.movedFrom)
   }
 
   const content = fm ? fm.content : raw
@@ -127,6 +130,7 @@ export function serializeNote(meta: NoteMeta, content: string): string {
   if (meta.created) lines.push(`created: ${quote(meta.created)}`)
   lines.push(`updated: ${quote(now)}`)
   if (meta.tags?.length) lines.push(`tags: [${meta.tags.join(', ')}]`)
+  if (meta.movedFrom) lines.push(`movedFrom: ${quote(meta.movedFrom)}`)
   lines.push('---')
   lines.push('')
   if (content) lines.push(content)

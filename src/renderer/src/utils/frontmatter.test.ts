@@ -150,6 +150,13 @@ describe('serializeNote', () => {
     expect(parsed.content).toBe('# Full\ncontent')
   })
 
+  it('round-trips movedFrom', () => {
+    const raw = serializeNote({ title: 'T', due: '2026-09-06', movedFrom: '2026-09-01' }, '')
+    expect(raw).toContain('movedFrom: "2026-09-01"')
+    expect(parseNote(raw).meta.movedFrom).toBe('2026-09-01')
+    expect(parseNote(serializeNote({ title: 'T', due: '2026-09-06', movedFrom: undefined }, '')).meta.movedFrom).toBeUndefined()
+  })
+
   it('writes tags as a comma-separated list', () => {
     const raw = serializeNote({ title: 'T', tags: ['one', 'two'] }, '')
     expect(raw).toContain('tags: [one, two]')

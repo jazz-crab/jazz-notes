@@ -64,6 +64,7 @@ function buildMeta(draft: NoteDraft, existing: NoteMeta | null): NoteMeta {
   if (draft.color) meta.color = draft.color
   if (existing?.created) meta.created = existing.created
   if (draft.tags?.length) meta.tags = draft.tags
+  if (draft.movedFrom !== undefined) meta.movedFrom = draft.movedFrom
   meta.updated = now
   return meta
 }

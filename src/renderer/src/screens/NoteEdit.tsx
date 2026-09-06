@@ -216,7 +216,7 @@ export default function NoteEdit({ relPath, onBack }: Props) {
       <SidePanel side="right" open={sheet === 'date'} onClose={() => setSheet(null)} width={300}>
         <DatePicker
           date={currentNote.meta.due || ''}
-          onDateChange={(d) => handleMetaChange({ due: d || undefined })}
+          onDateChange={(d) => handleMetaChange({ due: d || undefined, movedFrom: undefined })}
           onDone={() => setSheet(null)}
         />
       </SidePanel>

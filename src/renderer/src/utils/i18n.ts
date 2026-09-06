@@ -146,6 +146,15 @@ const ru: Record<string, string> = {
   'sync.import.apply': 'Применить',
   'sync.import.invalid': 'Некорректная строка синхронизации',
   'sync.auto': 'Автосинхронизация',
+  'moved.from': 'перенесено с',
+  'calendar.prev': 'Предыдущие дни',
+  'calendar.next': 'Следующие дни',
+  'calendar.today': 'Сегодня',
+  'calendar.tomorrow': 'Завтра',
+  'calendar.day.after.tomorrow': 'Послезавтра',
+  'calendar.yesterday': 'Вчера',
+  'calendar.empty': 'Нет дел на эти даты',
+  'calendar.empty.dates': 'Нет запланированных дел на эти даты',
   'close': 'Закрыть',
 }
 
@@ -290,6 +299,15 @@ const en: Record<string, string> = {
   'sync.import.apply': 'Apply',
   'sync.import.invalid': 'Invalid sync string',
   'sync.auto': 'Auto sync',
+  'moved.from': 'moved from',
+  'calendar.prev': 'Previous days',
+  'calendar.next': 'Next days',
+  'calendar.today': 'Today',
+  'calendar.tomorrow': 'Tomorrow',
+  'calendar.day.after.tomorrow': 'Day after tomorrow',
+  'calendar.yesterday': 'Yesterday',
+  'calendar.empty': 'No tasks on these dates',
+  'calendar.empty.dates': 'No scheduled tasks on these dates',
   'close': 'Close',
 }
 

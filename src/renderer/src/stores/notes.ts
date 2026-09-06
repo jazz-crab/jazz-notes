@@ -5,6 +5,7 @@ import { useSettingsStore } from './settings'
 import { debounce } from '../utils/debounce'
 import { replaceFirstHeading } from '../utils/note'
 import { parentOf, moveFolderPath, leafName } from '../utils/folder'
+import { overdueMigrations } from '../utils/calendar'
 import { historyStore } from './history'
 
 const ID_DIGITS = 5
@@ -153,6 +154,15 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           await window.jazz.writeFile(note.relPath, serializeNote(note.meta, note.body), path)
         }
       }
+      for (const m of overdueMigrations(notes)) {
+        const note = notes.find((n) => n.relPath === m.relPath)
+        if (!note) continue
+        note.meta = { ...note.meta, due: m.newDue, movedFrom: m.movedFrom }
+        note.title = note.meta.title
+        ignoreWatcher.add(note.relPath)
+        await window.jazz.writeFile(note.relPath, serializeNote(note.meta, note.body), path)
+        setTimeout(() => ignoreWatcher.delete(note.relPath), 3000)
+      }
       set({ notes, folders, loading: false, vaultExists: true })
       void window.jazz.indexInit(path)
     } catch (e) {
@@ -215,6 +225,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       color: currentNote.meta.color,
       priority: currentNote.meta.priority,
       tags: currentNote.meta.tags,
+      movedFrom: currentNote.meta.movedFrom,
     }
     try {
       await window.jazz.updateNoteDraft(currentNote.relPath, draft, notesPath)
@@ -293,6 +304,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       color: note.meta.color,
       priority: note.meta.priority,
       tags: note.meta.tags,
+      movedFrom: note.meta.movedFrom,
     }
     set({ notes: get().notes.map((n) => (n.relPath === relPath ? { ...n, title: finalTitle, body } : n)) })
     const cur = get().currentNote
@@ -319,6 +331,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       priority: meta.priority,
       done: meta.done,
       tags: meta.tags,
+      movedFrom: meta.movedFrom ?? undefined,
     }
     set({ notes: get().notes.map((n) => (n.relPath === relPath ? { ...n, meta } : n)) })
     void window.jazz
