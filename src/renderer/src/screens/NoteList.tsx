@@ -24,12 +24,12 @@ import { CSS } from '@dnd-kit/utilities'
 import type React from 'react'
 
 const RU_TO_LATIN: Record<string, string> = {
-  'о': 'j', 'л': 'k', 'д': 'l', 'в': 'd', 'ч': 'x', 'к': 'r', 'щ': 'o', 'т': 'n', 'п': 'g', '.': '/',
+  'о': 'j', 'л': 'k', 'д': 'l', 'в': 'd', 'ч': 'x', 'к': 'r', 'щ': 'o', 'т': 'n', 'п': 'g', 'у': 'e', '.': '/',
 }
 
 interface Props {
   isVisible: boolean
-  onSelectNote: (relPath: string) => void
+  onSelectNote: (relPath: string, editing?: boolean) => void
 }
 
 interface NoteItemProps {
@@ -107,6 +107,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const [noteAction, setNoteAction] = useState<NoteAction>(null)
   const [movingNote, setMovingNote] = useState<Note | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [view, setView] = useState<'list' | 'kanban'>('list')
   const [showCreate, setShowCreate] = useState(false)
   const [activeIdx, setActiveIdx] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
@@ -221,6 +222,11 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
       const key = RU_TO_LATIN[e.key] ?? e.key
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        setView(v => (v === 'kanban' ? 'list' : 'kanban'))
+        return
+      }
       if (key === 'n') {
         e.preventDefault()
         setShowCreate(true)
@@ -260,10 +266,14 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         e.preventDefault()
         const note = filtered[activeIdx]
         if (note) setNoteAction({ note, action: 'rename' })
-      } else if (key === 'o' || key === 'l' || key === 'Enter') {
+      } else if (key === 'e') {
         e.preventDefault()
         const note = filtered[activeIdx]
-        if (note) onSelectNote(note.relPath)
+        if (note) onSelectNote(note.relPath, true)
+      } else if (key === 'o' || key === 'l' || key === ' ' || key === 'Spacebar' || key === 'Enter') {
+        e.preventDefault()
+        const note = filtered[activeIdx]
+        if (note) onSelectNote(note.relPath, false)
       }
     }
     window.addEventListener('keydown', handler, true)
@@ -284,9 +294,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
 
   const closeAction = () => setNoteAction(null)
 
-  const showCalendar =
-    !searchQuery &&
-    (sidebarSelection.type === 'all' || sidebarSelection.type === 'folder')
+  const showCalendar = view === 'kanban' && !searchQuery && (sidebarSelection.type === 'all' || sidebarSelection.type === 'folder')
 
   const sortOptions: Array<{ value: SortBy; label: string }> = [
     { value: 'date', label: t('sort.by.date', lang) },

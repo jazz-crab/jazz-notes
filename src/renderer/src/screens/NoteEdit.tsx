@@ -18,9 +18,12 @@ import UndoToast from '../components/UndoToast'
 interface Props {
   relPath: string
   onBack: () => void
+  initialEditing?: boolean
 }
 
-export default function NoteEdit({ relPath, onBack }: Props) {
+const RU_TO_LATIN_EDIT: Record<string, string> = { 'р': 'h', 'у': 'e' }
+
+export default function NoteEdit({ relPath, onBack, initialEditing = false }: Props) {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
   const noteColorMap = useNoteColors()
@@ -37,6 +40,7 @@ export default function NoteEdit({ relPath, onBack }: Props) {
   const [lastError, setLastError] = useState<string | null>(null)
   const [sheet, setSheet] = useState<'color' | 'date' | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const [editing, setEditing] = useState(initialEditing)
 
   useEffect(() => {
     setCurrentNote(relPath)
@@ -54,6 +58,21 @@ export default function NoteEdit({ relPath, onBack }: Props) {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleBack()
+        return
+      }
+      const target = e.target as Element | null
+      const typing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        (target instanceof HTMLElement && !!target.closest('.cm-editor'))
+      if (typing) return
+      const key = RU_TO_LATIN_EDIT[e.key] ?? e.key
+      if (key === 'h') {
+        e.preventDefault()
+        handleBack()
+      } else if (key === 'e') {
+        e.preventDefault()
+        setEditing(true)
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -179,6 +198,7 @@ export default function NoteEdit({ relPath, onBack }: Props) {
           value={currentNote.body}
           onChange={handleChange}
           onSave={handleSave}
+          editing={editing}
         />
       </div>
 

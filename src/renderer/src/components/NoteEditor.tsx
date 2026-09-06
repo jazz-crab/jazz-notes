@@ -24,9 +24,10 @@ interface Props {
   value: string
   onChange: (value: string) => void
   onSave: () => void
+  editing?: boolean
 }
 
-export default function NoteEditor({ documentId, value, onChange, onSave }: Props) {
+export default function NoteEditor({ documentId, value, onChange, onSave, editing = false }: Props) {
   const handleRef = useRef<AtomicCodeMirrorEditorHandle | null>(null)
   const onChangeRef = useRef(onChange)
   const onSaveRef = useRef(onSave)
@@ -93,8 +94,8 @@ export default function NoteEditor({ documentId, value, onChange, onSave }: Prop
 
   useEffect(() => {
     clearToast()
-    handleRef.current?.focus()
-  }, [documentId, clearToast])
+    if (editing) handleRef.current?.focus()
+  }, [documentId, editing, clearToast])
 
   const handleChange = useMemo(() => (md: string) => onChangeRef.current(md), [])
 
@@ -135,6 +136,7 @@ export default function NoteEditor({ documentId, value, onChange, onSave }: Prop
         onMarkdownChange={handleChange}
         editorHandleRef={handleRef}
         codeLanguages={ATOMIC_CODE_LANGUAGES}
+        readOnly={!editing}
         extensions={extensions}
       />
     </div>

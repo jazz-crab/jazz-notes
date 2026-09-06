@@ -12,7 +12,7 @@ import '@atomic-editor/editor/styles.css'
 
 type Screen =
   | { type: 'list' }
-  | { type: 'edit'; relPath: string }
+  | { type: 'edit'; relPath: string; editing: boolean }
 
 function applyTheme(palette: string, isDark: boolean, font: string) {
   const variant = getVariant(palette as any, isDark)
@@ -110,12 +110,13 @@ export default function App() {
           width: '100%',
         }}
       >
-        <NoteList isVisible={screen.type === 'list'} onSelectNote={(relPath) => setScreen({ type: 'edit', relPath })} />
+        <NoteList isVisible={screen.type === 'list'} onSelectNote={(relPath, editing) => setScreen({ type: 'edit', relPath, editing: editing ?? false })} />
       </div>
       {screen.type === 'edit' && (
         <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
           <NoteEdit
             relPath={screen.relPath}
+            initialEditing={screen.editing}
             onBack={() => setScreen({ type: 'list' })}
           />
         </div>
