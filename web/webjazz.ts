@@ -193,6 +193,14 @@ export function installWebJazz() {
         }
       }
     },
+
+    onAppFocus: (cb: () => void) => {
+      const handler = () => {
+        if (document.visibilityState === 'visible') cb()
+      }
+      document.addEventListener('visibilitychange', handler)
+      return () => document.removeEventListener('visibilitychange', handler)
+    },
   }
 
   window.jazz = api

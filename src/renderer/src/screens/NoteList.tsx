@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNotesStore, type SortBy, type Note } from '../stores/notes'
 import { useColors } from '../theme'
 import { t } from '../utils/i18n'
@@ -22,6 +22,10 @@ import { DndContext, useDraggable, useSensors, useSensor, PointerSensor, TouchSe
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type React from 'react'
+
+const RU_TO_LATIN: Record<string, string> = {
+  'о': 'j', 'л': 'k', 'д': 'l', 'в': 'd', 'ч': 'x', 'к': 'r', 'щ': 'o', 'т': 'n', 'п': 'g', '.': '/',
+}
 
 interface Props {
   isVisible: boolean
@@ -137,6 +141,70 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
     loadNotes()
   }, [])
 
+  const filtered = useMemo(() => {
+    let list = notes.filter((n) => {
+      if (sidebarSelection.type === 'folder') {
+        if (!isInFolder(n.relPath, sidebarSelection.path)) return false
+      }
+      if (sidebarSelection.type === 'today') {
+        if (!n.meta.due) return false
+        const today = new Date()
+        const d = new Date(n.meta.due)
+        if (d.toDateString() !== today.toDateString()) return false
+      }
+      if (sidebarSelection.type === 'tomorrow') {
+        if (!n.meta.due) return false
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const d = new Date(n.meta.due)
+        if (d.toDateString() !== tomorrow.toDateString()) return false
+      }
+      if (sidebarSelection.type === 'week') {
+        if (!n.meta.due) return false
+        const week = new Date()
+        week.setDate(week.getDate() + 7)
+        const d = new Date(n.meta.due)
+        if (d > week) return false
+      }
+      if (sidebarSelection.type === 'later') {
+        if (!n.meta.due) return false
+        const week = new Date()
+        week.setDate(week.getDate() + 7)
+        const d = new Date(n.meta.due)
+        if (d <= week) return false
+      }
+      if (sidebarSelection.type === 'nodate') {
+        if (n.meta.due) return false
+      }
+      if (n.meta.done && !showDone) return false
+      return true
+    })
+
+    if (searchQuery && searchResults) {
+      const byPath = new Map(searchResults.map((r) => [r.relPath, r]))
+      list = list.filter((n) => byPath.has(n.relPath))
+    }
+    if (searchQuery && searchResults === null) {
+      list = []
+    }
+
+    if (sortBy === 'due') {
+      list = [...list].sort((a, b) => {
+        if (!a.meta.due && !b.meta.due) return 0
+        if (!a.meta.due) return 1
+        if (!b.meta.due) return -1
+        return new Date(a.meta.due).getTime() - new Date(b.meta.due).getTime()
+      })
+    } else {
+      list = [...list].sort((a, b) => {
+        const aT = a.meta.updated || a.meta.created || ''
+        const bT = b.meta.updated || b.meta.created || ''
+        return bT.localeCompare(aT)
+      })
+    }
+    return list
+  }, [notes, sidebarSelection.type, sidebarSelection.type === 'folder' ? sidebarSelection.path : undefined, searchQuery, searchResults, showDone, sortBy])
+
   useEffect(() => {
     void useSyncStore.getState().startup()
   }, [])
@@ -152,17 +220,18 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
     if (!isVisible) return
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
-      if (e.key === 'n') {
+      const key = RU_TO_LATIN[e.key] ?? e.key
+      if (key === 'n') {
         e.preventDefault()
         setShowCreate(true)
         return
       }
-      if (e.key === '/') {
+      if (key === '/') {
         e.preventDefault()
         searchRef.current?.focus()
         return
       }
-      if (e.key === 'g') {
+      if (key === 'g') {
         e.preventDefault()
         const now = Date.now()
         if (now - lastGTime.current < 500) {
@@ -174,24 +243,24 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         return
       }
       if (filtered.length === 0) return
-      if (e.key === 'G') {
+      if (key === 'G') {
         e.preventDefault()
         setActiveIdx(filtered.length - 1)
-      } else if (e.key === 'j') {
+      } else if (key === 'j') {
         e.preventDefault()
         setActiveIdx((i) => Math.min(i + 1, filtered.length - 1))
-      } else if (e.key === 'k') {
+      } else if (key === 'k') {
         e.preventDefault()
         setActiveIdx((i) => Math.max(i - 1, 0))
-      } else if (e.key === 'd' || e.key === 'x') {
+      } else if (key === 'd' || key === 'x') {
         e.preventDefault()
         const note = filtered[activeIdx]
         if (note) setConfirmDelete(note.relPath)
-      } else if (e.key === 'r') {
+      } else if (key === 'r') {
         e.preventDefault()
         const note = filtered[activeIdx]
         if (note) setNoteAction({ note, action: 'rename' })
-      } else if (e.key === 'o' || e.key === 'Enter') {
+      } else if (key === 'o' || key === 'l' || key === 'Enter') {
         e.preventDefault()
         const note = filtered[activeIdx]
         if (note) onSelectNote(note.relPath)
@@ -208,67 +277,6 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   useEffect(() => {
     listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
   }, [activeIdx, filtered])
-
-  let filtered = notes.filter((n) => {
-    if (sidebarSelection.type === 'folder') {
-      if (!isInFolder(n.relPath, sidebarSelection.path)) return false
-    }
-    if (sidebarSelection.type === 'today') {
-      if (!n.meta.due) return false
-      const today = new Date()
-      const d = new Date(n.meta.due)
-      if (d.toDateString() !== today.toDateString()) return false
-    }
-    if (sidebarSelection.type === 'tomorrow') {
-      if (!n.meta.due) return false
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const d = new Date(n.meta.due)
-      if (d.toDateString() !== tomorrow.toDateString()) return false
-    }
-    if (sidebarSelection.type === 'week') {
-      if (!n.meta.due) return false
-      const week = new Date()
-      week.setDate(week.getDate() + 7)
-      const d = new Date(n.meta.due)
-      if (d > week) return false
-    }
-    if (sidebarSelection.type === 'later') {
-      if (!n.meta.due) return false
-      const week = new Date()
-      week.setDate(week.getDate() + 7)
-      const d = new Date(n.meta.due)
-      if (d <= week) return false
-    }
-    if (sidebarSelection.type === 'nodate') {
-      if (n.meta.due) return false
-    }
-    if (n.meta.done && !showDone) return false
-    return true
-  })
-
-  if (searchQuery && searchResults) {
-    const byPath = new Map(searchResults.map((r) => [r.relPath, r]))
-    filtered = filtered.filter((n) => byPath.has(n.relPath))
-  }
-  if (searchQuery && searchResults === null) {
-    filtered = []
-  }
-
-  if (sortBy === 'due') {
-    filtered = [...filtered].sort((a, b) => {
-      if (!a.meta.due && !b.meta.due) return 0
-      if (!a.meta.due) return 1
-      if (!b.meta.due) return -1
-      return new Date(a.meta.due).getTime() - new Date(b.meta.due).getTime()
-    })
-  } else {
-    filtered = [...filtered].sort((a, b) => {
-      const aT = a.meta.updated || a.meta.created || ''
-      const bT = b.meta.updated || b.meta.created || ''
-      return bT.localeCompare(aT)
-    })
-  }
 
   const openMenu = (note: Note, x: number, y: number) => {
     setMenu({ note, x, y })

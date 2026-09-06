@@ -95,7 +95,7 @@ const card = (c: any) => ({
   cursor: 'pointer',
   transition: 'border-color 0.1s',
 })
-const cardActive = (c: any) => ({ borderColor: c.blue })
+const cardActive = (c: any) => ({ background: mixHex(c.blue, c.bgAlt, 0.12) })
 const colorDot = (c: string) => ({
   width: 8,
   height: 8,

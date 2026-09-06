@@ -129,23 +129,21 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         return
       }
       const entries = await window.jazz.readDirRecursive(path)
-      const notes: Note[] = []
-      const folders: string[] = []
-      for (const entry of entries) {
-        if (entry.endsWith('/')) {
-          folders.push(entry.slice(0, -1))
-        } else {
-          const raw = await window.jazz.readFile(entry, path)
-          const data = parseNote(raw)
-          notes.push({
-            relPath: entry,
-            title: data.meta.title,
-            meta: data.meta,
-            content: raw,
-            body: data.content,
-          })
+      const files = entries.filter((entry) => !entry.endsWith('/'))
+      const folders: string[] = entries
+        .filter((entry) => entry.endsWith('/'))
+        .map((entry) => entry.slice(0, -1))
+      const raws = await Promise.all(files.map((relPath) => window.jazz.readFile(relPath, path)))
+      const notes: Note[] = raws.map((raw, i) => {
+        const data = parseNote(raw)
+        return {
+          relPath: files[i],
+          title: data.meta.title,
+          meta: data.meta,
+          content: raw,
+          body: data.content,
         }
-      }
+      })
       for (const note of notes) {
         if (!note.meta.id) {
           const id = computeAndStoreNextId(notes)
