@@ -163,7 +163,8 @@ export class NoteIndexStore {
     if (!db) return []
     const q = query.trim()
     if (!q) return []
-    const match = `"${q.replace(/"/g, '""')}"`
+    const terms = q.split(/\s+/).filter(Boolean)
+    const match = terms.map((t) => `"${t.replace(/"/g, '""')}*"`).join(' ')
     const rows = db.all(
       `SELECT n.rel_path as relPath, n.title as title, snippet(notes_fts, 1, '<mark>', '</mark>', '...', 12) as snip
        FROM notes_fts JOIN notes n ON n.rowid = notes_fts.rowid

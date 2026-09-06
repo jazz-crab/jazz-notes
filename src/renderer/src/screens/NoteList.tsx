@@ -25,7 +25,7 @@ import { CSS } from '@dnd-kit/utilities'
 import type React from 'react'
 
 const RU_TO_LATIN: Record<string, string> = {
-  'о': 'j', 'л': 'k', 'д': 'l', 'в': 'd', 'ч': 'x', 'к': 'r', 'щ': 'o', 'т': 'n', 'п': 'g', 'у': 'e', 'ы': 's', 'б': ',', '.': '/',
+  'о': 'j', 'л': 'k', 'д': 'l', 'в': 'd', 'ч': 'x', 'к': 'r', 'щ': 'o', 'т': 'n', 'п': 'g', 'у': 'e', 'ы': 's', 'б': ',', 'а': 'f', '.': '/',
 }
 
 interface Props {
@@ -222,8 +222,18 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   useEffect(() => {
     if (!isVisible) return
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
       if (dialogCount() > 0) return
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement
+      if (e.key === 'Escape') {
+        if (searchQuery || typing) {
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          setSearchQuery('')
+          searchRef.current?.blur()
+          return
+        }
+      }
+      if (typing) return
       const key = RU_TO_LATIN[e.key] ?? e.key
       if (e.key === 'Tab') {
         e.preventDefault()
@@ -235,7 +245,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         setShowCreate(true)
         return
       }
-      if (key === '/') {
+      if (key === '/' || key === 'f') {
         e.preventDefault()
         searchRef.current?.focus()
         return
@@ -291,7 +301,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
     }
     window.addEventListener('keydown', handler, true)
     return () => window.removeEventListener('keydown', handler, true)
-  }, [isVisible, filtered, activeIdx, onSelectNote])
+  }, [isVisible, filtered, activeIdx, searchQuery, onSelectNote])
 
   useEffect(() => {
     setActiveIdx((i) => (i >= filtered.length ? Math.max(0, filtered.length - 1) : i))
