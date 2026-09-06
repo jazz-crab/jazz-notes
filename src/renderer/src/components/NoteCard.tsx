@@ -1,5 +1,5 @@
 import type { Note } from '../stores/notes'
-import { useColors, useNoteColors, getVariant } from '../theme'
+import { useColors, useNoteColors } from '../theme'
 import { mixHex } from '../utils/color'
 import { useSettingsStore } from '../stores/settings'
 import { localeOf, t } from '../utils/i18n'
@@ -18,10 +18,7 @@ interface Props {
 
 export default function NoteCard({ note, isActive, isLastOpened, onClick, onContextMenu }: Props) {
   const colors = useColors()
-  const palette = useSettingsStore((s) => s.palette)
-  const isDark = useSettingsStore((s) => s.isDark)
   const lang = useSettingsStore((s) => s.lang)
-  const c = isActive ? getVariant(palette, !isDark).colors : colors
   const showCountdown = useSettingsStore((s) => s.showCountdown)
   const noteColorMap = useNoteColors()
   const noteColor = note.meta.color ? noteColorMap[note.meta.color] : null
@@ -36,14 +33,15 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
   const isFuture = due && due.getTime() > now
   const countdown = isFuture && showCountdown ? formatSmartCountdown(due.getTime() - now, lang) : null
   const preview = note.body.replace(/^#+\s*/gm, '').replace(/[*~`>-]/g, '').trim().slice(0, 140)
-  const cardBg = noteColor ? mixHex(noteColor, c.bgAlt, 0.1) : undefined
+  const cardBg = noteColor ? mixHex(noteColor, colors.bgAlt, 0.1) : undefined
   const folder = parentOf(note.relPath)
 
   return (
     <div
       style={{
-        ...card(c),
+        ...card(colors),
         ...(cardBg ? { background: cardBg } : {}),
+        ...(isActive ? cardActive(colors) : {}),
         ...(isLastOpened ? { borderColor: colors.blue, borderStyle: 'dashed' as const } : {}),
       }}
       onClick={onClick}
@@ -54,25 +52,25 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
           {noteColor && (
             <span style={{ ...colorDot(noteColor) }} />
           )}
-          {note.meta.done && <span style={doneMarkStyle(c)}>{'\u2713'}</span>}
-          <span style={titleStyle(c, note.meta.done)}>{note.title || t('untitled', lang)}</span>
+          {note.meta.done && <span style={doneMarkStyle(colors)}>{'\u2713'}</span>}
+          <span style={titleStyle(colors, note.meta.done)}>{note.title || t('untitled', lang)}</span>
         </div>
-        {preview && <div style={previewStyle(c)}>{preview}</div>}
+        {preview && <div style={previewStyle(colors)}>{preview}</div>}
         <div style={styles.footer}>
           {folder && (
-            <span style={pillStyle(c)} title={folder}>
+            <span style={pillStyle(colors)} title={folder}>
               {leafName(folder)}
             </span>
           )}
           {due && (
-            <span style={{ ...dueStyle(c), ...(isOverdue ? overdueStyle(c) : {}) }}>
+            <span style={{ ...dueStyle(colors), ...(isOverdue ? overdueStyle(colors) : {}) }}>
               {due.toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' })}
             </span>
           )}
-          {countdown && <span style={countdownStyle(c)}>{countdown}</span>}
-          {movedFrom && <span style={movedFromStyle(c)}>{t('moved.from', lang) + ' ' + movedFrom}</span>}
+          {countdown && <span style={countdownStyle(colors)}>{countdown}</span>}
+          {movedFrom && <span style={movedFromStyle(colors)}>{t('moved.from', lang) + ' ' + movedFrom}</span>}
           {note.meta.updated && (
-            <span style={updatedStyle(c)}>
+            <span style={updatedStyle(colors)}>
               {new Date(note.meta.updated).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' })}
             </span>
           )}
@@ -96,6 +94,12 @@ const card = (c: any) => ({
   border: `1px solid ${c.border}`,
   cursor: 'pointer',
   transition: 'border-color 0.1s, background 0.1s',
+})
+const cardActive = (c: any) => ({
+  background: mixHex(c.blue, c.bgAlt, 0.18),
+  borderLeftColor: c.blue,
+  borderLeftWidth: 3,
+  borderLeftStyle: 'solid',
 })
 const colorDot = (c: string) => ({
   width: 8,
