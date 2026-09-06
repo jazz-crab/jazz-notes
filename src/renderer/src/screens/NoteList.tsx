@@ -72,9 +72,9 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onContextM
         transform: CSS.Transform.toString(transform),
         opacity: isDragging ? 0.5 : 1,
         touchAction: 'none',
-        alignSelf: isActive ? 'flex-start' : 'flex-end',
-        maxWidth: isActive ? '100%' : '90%',
-        transition: 'max-width 0.15s ease, align-self 0.15s ease',
+        width: isActive ? '100%' : '92%',
+        marginLeft: isActive ? 0 : 'auto',
+        transition: 'width 0.15s ease, margin-left 0.15s ease',
       }}
     >
       <NoteCard note={note} isActive={isActive} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />
