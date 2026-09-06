@@ -81,19 +81,27 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  body: { flex: 1, padding: '10px 12px', minWidth: 0 },
+  body: {
+    flex: 1,
+    padding: '10px 12px',
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
   header: { display: 'flex', alignItems: 'center', gap: 6 },
   footer: { display: 'flex', gap: 8, marginTop: 6, fontSize: 11 },
 }
 
 const card = (c: any) => ({
   display: 'flex',
+  flexDirection: 'column',
   borderRadius: 6,
   overflow: 'hidden',
   background: c.bgAlt,
   border: `1px solid ${c.border}`,
   cursor: 'pointer',
-  minHeight: 62,
+  minHeight: 92,
   transition: 'border-color 0.1s, background 0.1s',
 })
 const cardActive = (c: any) => ({
