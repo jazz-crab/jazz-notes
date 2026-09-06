@@ -99,7 +99,7 @@ const cardActive = (c: any) => ({
   background: mixHex(c.blue, c.bgAlt, 0.18),
   borderLeftColor: c.blue,
   borderLeftWidth: 3,
-  borderLeftStyle: 'solid',
+  borderLeftStyle: 'solid' as const,
 })
 const colorDot = (c: string) => ({
   width: 8,
