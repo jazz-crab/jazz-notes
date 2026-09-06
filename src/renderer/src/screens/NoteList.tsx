@@ -121,6 +121,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const lastGTime = useRef(0)
+  const lastKeyNav = useRef(0)
   const isMobile = useIsMobile()
 
   const sensors = useSensors(
@@ -276,6 +277,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         if (now - lastGTime.current < 500) {
           lastGTime.current = 0
           setActiveIdx(0)
+          lastKeyNav.current = Date.now()
           scrollToActive()
         } else {
           lastGTime.current = now
@@ -286,14 +288,17 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
       if (key === 'G') {
         e.preventDefault()
         setActiveIdx(filtered.length - 1)
+        lastKeyNav.current = Date.now()
         scrollToActive()
       } else if (key === 'j') {
         e.preventDefault()
         setActiveIdx((i) => Math.min(i + 1, filtered.length - 1))
+        lastKeyNav.current = Date.now()
         scrollToActive()
       } else if (key === 'k') {
         e.preventDefault()
         setActiveIdx((i) => Math.max(i - 1, 0))
+        lastKeyNav.current = Date.now()
         scrollToActive()
       } else if (key === 'd' || key === 'x') {
         e.preventDefault()
@@ -430,7 +435,10 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
               isActive={idx === activeIdx}
               isLastOpened={note.relPath === lastOpenedRelPath}
               onOpen={() => onSelectNote(note.relPath)}
-              onHover={() => setActiveIdx(idx)}
+              onHover={() => {
+                if (Date.now() - lastKeyNav.current < 400) return
+                setActiveIdx(idx)
+              }}
               onContextMenu={(e) => {
                 e.preventDefault()
                 openMenu(note, e.clientX, e.clientY)
