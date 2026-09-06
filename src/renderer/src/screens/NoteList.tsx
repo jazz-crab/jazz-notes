@@ -298,7 +298,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   }, [filtered.length])
 
   useEffect(() => {
-    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
+    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'center' })
   }, [activeIdx, filtered])
 
   useEffect(() => {
