@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useColors } from '../theme'
 import { t } from '../utils/i18n'
 import { useSettingsStore } from '../stores/settings'
+import { registerDialog } from '../stores/ui'
 
 interface Props {
   message: string
@@ -19,15 +20,20 @@ export default function ConfirmDialog({ message, confirmLabel, cancelLabel, onCo
   const resolvedCancel = cancelLabel ?? t('cancel', lang)
 
   useEffect(() => {
+    const unsub = registerDialog('confirm', requestClose(onCancel))
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        requestClose(onCancel)()
-      }
+      if (e.key !== 'Enter') return
+      const t = e.target as Element | null
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return
+      e.stopPropagation()
+      requestClose(onConfirm)()
     }
-    window.addEventListener('keydown', handleKey, true)
-    return () => window.removeEventListener('keydown', handleKey, true)
-  }, [onCancel])
+    window.addEventListener('keydown', handleKey)
+    return () => {
+      unsub()
+      window.removeEventListener('keydown', handleKey)
+    }
+  }, [onCancel, onConfirm])
 
   const requestClose = (fn: () => void) => () => {
     if (closing) return

@@ -14,6 +14,7 @@ import CalendarView from '../components/CalendarView'
 import SyncIndicator from '../components/SyncIndicator'
 import ContextMenu from '../components/ContextMenu'
 import Modal from '../components/Modal'
+import { dialogCount } from '../stores/ui'
 import PromptDialog from '../components/PromptDialog'
 import DatePicker from '../components/DatePicker'
 import ColorPicker from '../components/ColorPicker'
@@ -24,7 +25,7 @@ import { CSS } from '@dnd-kit/utilities'
 import type React from 'react'
 
 const RU_TO_LATIN: Record<string, string> = {
-  'о': 'j', 'л': 'k', 'д': 'l', 'в': 'd', 'ч': 'x', 'к': 'r', 'щ': 'o', 'т': 'n', 'п': 'g', 'у': 'e', '.': '/',
+  'о': 'j', 'л': 'k', 'д': 'l', 'в': 'd', 'ч': 'x', 'к': 'r', 'щ': 'o', 'т': 'n', 'п': 'g', 'у': 'e', 'ы': 's', 'б': ',', '.': '/',
 }
 
 interface Props {
@@ -96,6 +97,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const vaultExists = useNotesStore((s) => s.vaultExists)
   const setSearchQuery = useNotesStore((s) => s.setSearchQuery)
   const setSortBy = useNotesStore((s) => s.setSortBy)
+  const setLastListOrder = useNotesStore((s) => s.setLastListOrder)
   const deleteNote = useNotesStore((s) => s.deleteNote)
   const renameNote = useNotesStore((s) => s.renameNote)
   const moveNote = useNotesStore((s) => s.moveNote)
@@ -221,6 +223,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
     if (!isVisible) return
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
+      if (dialogCount() > 0) return
       const key = RU_TO_LATIN[e.key] ?? e.key
       if (e.key === 'Tab') {
         e.preventDefault()
@@ -235,6 +238,16 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
       if (key === '/') {
         e.preventDefault()
         searchRef.current?.focus()
+        return
+      }
+      if (key === 's') {
+        e.preventDefault()
+        document.querySelector<HTMLElement>('[data-jz-sidebar] [data-jz-item]')?.focus()
+        return
+      }
+      if (key === ',') {
+        e.preventDefault()
+        useSettingsStore.getState().openSettings()
         return
       }
       if (key === 'g') {
@@ -281,12 +294,16 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   }, [isVisible, filtered, activeIdx, onSelectNote])
 
   useEffect(() => {
-    setActiveIdx(0)
+    setActiveIdx((i) => (i >= filtered.length ? Math.max(0, filtered.length - 1) : i))
   }, [filtered.length])
 
   useEffect(() => {
     listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
   }, [activeIdx, filtered])
+
+  useEffect(() => {
+    setLastListOrder(filtered.map((n) => n.relPath))
+  }, [filtered, setLastListOrder])
 
   const openMenu = (note: Note, x: number, y: number) => {
     setMenu({ note, x, y })

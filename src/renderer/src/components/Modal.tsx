@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useColors } from '../theme'
+import { registerDialog } from '../stores/ui'
 import type React from 'react'
 
 interface Props {
@@ -11,16 +12,7 @@ interface Props {
 export default function Modal({ title, onClose, children }: Props) {
   const colors = useColors()
 
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKey, true)
-    return () => window.removeEventListener('keydown', handleKey, true)
-  }, [onClose])
+  useEffect(() => registerDialog('modal', onClose), [onClose])
 
   return (
     <div style={overlayStyle} onClick={onClose}>

@@ -8,6 +8,7 @@ import NoteEdit from './screens/NoteEdit'
 import SettingsDialog from './components/SettingsDialog'
 import ConfirmDialog from './components/ConfirmDialog'
 import { historyStore } from './stores/history'
+import './stores/ui'
 import '@atomic-editor/editor/styles.css'
 
 type Screen =
@@ -29,6 +30,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ type: 'list' })
   const screenRef = useRef(screen)
   screenRef.current = screen
+  const isWeb = typeof window !== 'undefined' && !!(window as any).__JAZZ_IS_WEB__
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const palette = useSettingsStore((s) => s.palette)
   const isDark = useSettingsStore((s) => s.isDark)
@@ -53,6 +55,7 @@ export default function App() {
       if (e.key === 'Escape') {
         const s = screenRef.current
         if (s.type === 'edit') return
+        if (isWeb) return
         const settings = useSettingsStore.getState()
         if (settings.showSettings) return
         e.stopPropagation()
@@ -118,6 +121,7 @@ export default function App() {
             relPath={screen.relPath}
             initialEditing={screen.editing}
             onBack={() => setScreen({ type: 'list' })}
+            onOpenNote={(relPath) => setScreen({ type: 'edit', relPath, editing: false })}
           />
         </div>
       )}

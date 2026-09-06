@@ -14,20 +14,23 @@ import SaveStatusCircle, { type SaveStatus } from '../components/SaveStatusCircl
 import HistoryDialog from '../components/HistoryDialog'
 import SidePanel from '../components/SidePanel'
 import UndoToast from '../components/UndoToast'
+import { dialogCount } from '../stores/ui'
 
 interface Props {
   relPath: string
   onBack: () => void
+  onOpenNote: (relPath: string) => void
   initialEditing?: boolean
 }
 
-const RU_TO_LATIN_EDIT: Record<string, string> = { 'р': 'h', 'у': 'e' }
+const RU_TO_LATIN_EDIT: Record<string, string> = { 'р': 'h', 'у': 'e', 'й': 'q', 'о': 'j', 'л': 'k' }
 
-export default function NoteEdit({ relPath, onBack, initialEditing = false }: Props) {
+export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing = false }: Props) {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
   const noteColorMap = useNoteColors()
   const currentNote = useNotesStore((s) => s.currentNote)
+  const lastListOrder = useNotesStore((s) => s.lastListOrder)
   const setCurrentNote = useNotesStore((s) => s.setCurrentNote)
   const updateCurrentNote = useNotesStore((s) => s.updateCurrentNote)
   const updateNoteMeta = useNotesStore((s) => s.updateNoteMeta)
@@ -66,18 +69,25 @@ export default function NoteEdit({ relPath, onBack, initialEditing = false }: Pr
         target instanceof HTMLTextAreaElement ||
         (target instanceof HTMLElement && !!target.closest('.cm-editor'))
       if (typing) return
+      if (dialogCount() > 0) return
       const key = RU_TO_LATIN_EDIT[e.key] ?? e.key
-      if (key === 'h') {
+      if (key === 'h' || key === 'q') {
         e.preventDefault()
         handleBack()
       } else if (key === 'e') {
         e.preventDefault()
         setEditing(true)
+      } else if (key === 'j' || key === 'k') {
+        if (editing) return
+        e.preventDefault()
+        const idx = lastListOrder.indexOf(relPath)
+        const next = key === 'j' ? idx + 1 : idx - 1
+        if (idx >= 0 && next >= 0 && next < lastListOrder.length) onOpenNote(lastListOrder[next])
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [handleBack])
+  }, [handleBack, editing, lastListOrder, relPath, onOpenNote])
 
   const performSaveRef = useRef(async () => {})
   performSaveRef.current = async () => {

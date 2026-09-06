@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type React from 'react'
 import { useColors } from '../theme'
+import { registerDialog } from '../stores/ui'
 
 interface Props {
   side: 'left' | 'right'
@@ -20,14 +21,8 @@ export default function SidePanel({ side, open, onClose, children, width }: Prop
 
   useEffect(() => {
     if (!render) return
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKey, true)
-    return () => window.removeEventListener('keydown', handleKey, true)
+    const unsub = registerDialog('sidepanel', onClose)
+    return unsub
   }, [render, onClose])
 
   if (!render) return null

@@ -42,7 +42,7 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
         ...card(colors),
         ...(cardBg ? { background: cardBg } : {}),
         ...(isActive ? cardActive(colors) : {}),
-        ...(isLastOpened ? { opacity: 0.5 } : {}),
+        ...(isLastOpened ? { borderColor: colors.blue, borderStyle: 'dashed' as const } : {}),
       }}
       onClick={onClick}
       onContextMenu={onContextMenu}

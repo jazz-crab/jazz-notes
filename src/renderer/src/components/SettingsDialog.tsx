@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSettingsStore, clampUiZoom, UI_ZOOM_STEP } from '../stores/settings'
 import { useSyncStore } from '../stores/sync'
 import { palettes } from '../theme/themes'
@@ -9,6 +9,7 @@ import { useNotesStore } from '../stores/notes'
 import { decodeSyncConfig } from '../../../shared/syncConfig'
 import SyncShareDialog from './SyncShareDialog'
 import SyncScanDialog from './SyncScanDialog'
+import { registerDialog } from '../stores/ui'
 
 export default function SettingsDialog() {
   const colors = useColors()
@@ -46,6 +47,8 @@ export default function SettingsDialog() {
   const [importText, setImportText] = useState('')
   const [importError, setImportError] = useState(false)
   const [tab, setTab] = useState<'main' | 'appearance' | 'sync'>('main')
+  const tabRef = useRef(tab)
+  tabRef.current = tab
 
   const handlePickFolder = async () => {
     const dir = await window.jazz.selectDirectory()
@@ -77,17 +80,29 @@ export default function SettingsDialog() {
   const zoomBy = (delta: number) => setUiZoom(clampUiZoom(uiZoom + delta))
 
   useEffect(() => {
+    if (showSettings) setTab('main')
+  }, [showSettings])
+
+  useEffect(() => {
     if (!showSettings) return
-    setTab('main')
+    const unsub = registerDialog('settings', closeSettings)
+    document.querySelector<HTMLElement>('[data-settings-tab="main"]')?.focus()
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        closeSettings()
+      const tabs: Array<'main' | 'appearance' | 'sync'> = ['main', 'appearance', 'sync']
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const idx = tabs.indexOf(tabRef.current)
+        const next = tabs[(idx + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]
+        e.preventDefault()
+        setTab(next)
+        document.querySelector<HTMLElement>(`[data-settings-tab="${next}"]`)?.focus()
       }
     }
     window.addEventListener('keydown', handleKey, true)
-    return () => window.removeEventListener('keydown', handleKey, true)
-  }, [showSettings])
+    return () => {
+      unsub()
+      window.removeEventListener('keydown', handleKey, true)
+    }
+  }, [showSettings, closeSettings])
 
   if (!showSettings) return null
 
@@ -104,18 +119,21 @@ export default function SettingsDialog() {
         <div style={bodyStyle}>
           <div style={tabsStyle}>
             <button
+              data-settings-tab="main"
               style={tabBtnStyle(colors, tab === 'main')}
               onClick={() => setTab('main')}
             >
               {t('settings.tab.main', lang)}
             </button>
             <button
+              data-settings-tab="appearance"
               style={tabBtnStyle(colors, tab === 'appearance')}
               onClick={() => setTab('appearance')}
             >
               {t('settings.tab.appearance', lang)}
             </button>
             <button
+              data-settings-tab="sync"
               style={tabBtnStyle(colors, tab === 'sync')}
               onClick={() => setTab('sync')}
             >

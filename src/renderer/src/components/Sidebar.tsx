@@ -97,18 +97,27 @@ export default function Sidebar() {
     : []
 
   return (
-    <div style={container(colors)}>
+    <div style={container(colors)} data-jz-sidebar>
       <div style={title(colors)}>JazzNote</div>
 
       <div style={section}>
         {filterItems.map((item) => (
           <div
             key={item.label}
+            data-jz-item
+            tabIndex={0}
+            role="button"
             style={{
               ...itemStyle(colors),
               ...(isSelected(item.type) ? itemSelectedStyle(colors) : {}),
             }}
             onClick={() => setSidebarSelection(item.type)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setSidebarSelection(item.type)
+              }
+            }}
           >
             {item.label}
           </div>

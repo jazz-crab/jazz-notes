@@ -74,6 +74,7 @@ interface NotesState {
   notesPath: string
   dirtyNotes: Set<string>
   vaultExists: boolean
+  lastListOrder: string[]
 
   setNotesPath: (path: string) => void
   loadNotes: () => Promise<void>
@@ -88,6 +89,7 @@ interface NotesState {
   moveNote: (relPath: string, destFolder: string | null) => Promise<void>
   updateNoteMetaByPath: (relPath: string, patch: Partial<NoteMeta>) => Promise<void>
   setSidebarSelection: (sel: SidebarSelection) => void
+  setLastListOrder: (order: string[]) => void
   setSearchQuery: (q: string) => void
   runSearch: (query: string) => Promise<void>
   setSortBy: (s: SortBy) => void
@@ -112,6 +114,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   notesPath: '',
   dirtyNotes: new Set(),
   vaultExists: true,
+  lastListOrder: [],
 
   setNotesPath: (path: string) => set({ notesPath: path }),
 
@@ -364,12 +367,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     set({ notes: get().notes.filter((n) => n.relPath !== relPath) })
     void window.jazz
       .deleteFile(relPath, notesPath)
-      .then(() => get().loadNotes())
       .catch(() => get().loadNotes())
       .catch(() => {})
   },
 
   setSidebarSelection: (sel) => set({ sidebarSelection: sel }),
+  setLastListOrder: (order) => set({ lastListOrder: order }),
   setSearchQuery: (q) => {
     set({ searchQuery: q })
     void get().runSearch(q)

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useColors } from '../theme'
+import { registerDialog } from '../stores/ui'
 import type React from 'react'
 
 export interface ContextMenuItem {
@@ -27,20 +28,14 @@ export default function ContextMenu({ x, y, items, onClose }: Props) {
 
   useEffect(() => {
     const close = () => onClose()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onClose()
-      }
-    }
+    const unsub = registerDialog('contextmenu', onClose)
     window.addEventListener('mousedown', close)
     window.addEventListener('blur', close)
-    window.addEventListener('keydown', onKey, true)
     window.addEventListener('resize', close)
     return () => {
+      unsub()
       window.removeEventListener('mousedown', close)
       window.removeEventListener('blur', close)
-      window.removeEventListener('keydown', onKey, true)
       window.removeEventListener('resize', close)
     }
   }, [onClose])

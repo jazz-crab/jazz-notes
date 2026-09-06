@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useColors } from '../theme'
 import { t } from '../utils/i18n'
 import { useSettingsStore } from '../stores/settings'
+import { registerDialog } from '../stores/ui'
 
 interface Props {
   message: string
@@ -30,14 +31,8 @@ export default function PromptDialog({
   const resolvedCancel = cancelLabel ?? t('cancel', lang)
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        requestClose(onCancel)()
-      }
-    }
-    window.addEventListener('keydown', handleKey, true)
-    return () => window.removeEventListener('keydown', handleKey, true)
+    const unsub = registerDialog('prompt', requestClose(onCancel))
+    return unsub
   }, [onCancel])
 
   const requestClose = (fn: () => void) => () => {

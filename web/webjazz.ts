@@ -51,6 +51,7 @@ const subscribers = new Set<(relPath: string) => void>()
 
 export function installWebJazz() {
   if (window.jazz) return
+  ;(window as unknown as { __JAZZ_IS_WEB__?: boolean }).__JAZZ_IS_WEB__ = true
 
   const api: JazzAPI = {
     getPath: async () => {
