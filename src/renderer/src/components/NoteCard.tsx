@@ -93,6 +93,7 @@ const card = (c: any) => ({
   background: c.bgAlt,
   border: `1px solid ${c.border}`,
   cursor: 'pointer',
+  minHeight: 62,
   transition: 'border-color 0.1s, background 0.1s',
 })
 const cardActive = (c: any) => ({

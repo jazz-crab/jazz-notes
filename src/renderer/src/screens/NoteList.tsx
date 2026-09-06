@@ -73,7 +73,7 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onContextM
         opacity: isDragging ? 0.5 : 1,
         touchAction: 'none',
         alignSelf: isActive ? 'flex-start' : 'flex-end',
-        maxWidth: isActive ? '94%' : '72%',
+        maxWidth: isActive ? '100%' : '90%',
         transition: 'max-width 0.15s ease, align-self 0.15s ease',
       }}
     >
