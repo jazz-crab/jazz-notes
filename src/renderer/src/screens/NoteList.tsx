@@ -308,7 +308,16 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   }, [filtered.length])
 
   useEffect(() => {
-    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'center' })
+    const listEl = listRef.current
+    if (!listEl) return
+    const active = listEl.querySelector<HTMLElement>('[data-active="true"]')
+    if (!active) return
+    const cRect = active.getBoundingClientRect()
+    const lRect = listEl.getBoundingClientRect()
+    const margin = Math.round(cRect.height * 1.2)
+    if (cRect.top < lRect.top + margin || cRect.bottom > lRect.bottom - margin) {
+      active.scrollIntoView({ block: 'nearest' })
+    }
   }, [activeIdx, filtered])
 
   useEffect(() => {
