@@ -39,11 +39,12 @@ interface NoteItemProps {
   isActive: boolean
   isLastOpened: boolean
   onOpen: () => void
+  onHover: () => void
   onContextMenu: (e: React.MouseEvent) => void
   onDeleteConfirmed: () => void
 }
 
-function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
+function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onHover, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: note.relPath })
   const confirmedRef = useRef(false)
 
@@ -68,11 +69,12 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onContextM
       {...attributes}
       {...listeners}
       {...(isActive ? { 'data-active': 'true' } : {})}
+      onMouseEnter={onHover}
       style={{
         transform: CSS.Transform.toString(transform),
         opacity: isDragging ? 0.5 : 1,
         touchAction: 'none',
-        width: isActive ? '100%' : '92%',
+        width: isActive ? '100%' : '96%',
         marginLeft: isActive ? 0 : 'auto',
         transition: 'width 0.15s ease, margin-left 0.15s ease',
       }}
@@ -223,6 +225,11 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   }, [])
 
   useEffect(() => {
+    const scrollToActive = () => {
+      requestAnimationFrame(() => {
+        listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'center' })
+      })
+    }
     if (!isVisible) return
     const handler = (e: KeyboardEvent) => {
       if (dialogCount() > 0) return
@@ -269,6 +276,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         if (now - lastGTime.current < 500) {
           lastGTime.current = 0
           setActiveIdx(0)
+          scrollToActive()
         } else {
           lastGTime.current = now
         }
@@ -278,12 +286,15 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
       if (key === 'G') {
         e.preventDefault()
         setActiveIdx(filtered.length - 1)
+        scrollToActive()
       } else if (key === 'j') {
         e.preventDefault()
         setActiveIdx((i) => Math.min(i + 1, filtered.length - 1))
+        scrollToActive()
       } else if (key === 'k') {
         e.preventDefault()
         setActiveIdx((i) => Math.max(i - 1, 0))
+        scrollToActive()
       } else if (key === 'd' || key === 'x') {
         e.preventDefault()
         const note = filtered[activeIdx]
@@ -309,10 +320,6 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   useEffect(() => {
     setActiveIdx((i) => (i >= filtered.length ? Math.max(0, filtered.length - 1) : i))
   }, [filtered.length])
-
-  useEffect(() => {
-    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'center' })
-  }, [activeIdx, filtered])
 
   useEffect(() => {
     setLastListOrder(filtered.map((n) => n.relPath))
@@ -423,6 +430,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
               isActive={idx === activeIdx}
               isLastOpened={note.relPath === lastOpenedRelPath}
               onOpen={() => onSelectNote(note.relPath)}
+              onHover={() => setActiveIdx(idx)}
               onContextMenu={(e) => {
                 e.preventDefault()
                 openMenu(note, e.clientX, e.clientY)
