@@ -74,8 +74,9 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onHover, o
         transform: CSS.Transform.toString(transform),
         opacity: isDragging ? 0.5 : 1,
         touchAction: 'none',
-        width: isActive ? '100%' : 'calc(100% - 5px)',
+        width: 'calc(100% - 10px)',
         marginLeft: isActive ? 0 : 'auto',
+        marginRight: isActive ? 10 : 0,
       }}
     >
       <NoteCard note={note} isActive={isActive} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />
@@ -379,6 +380,12 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
                 style={searchStyle(colors)}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    searchRef.current?.blur()
+                  }
+                }}
                 placeholder={t('search.placeholder', lang)}
               />
               {searchQuery && (
