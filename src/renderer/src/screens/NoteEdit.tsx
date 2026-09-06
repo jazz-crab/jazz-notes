@@ -342,7 +342,6 @@ const tabStyle = (c: any) => ({
   border: `1px solid ${c.border}`,
   color: c.fgDark,
   cursor: 'pointer',
-  transition: 'color 0.15s, background 0.15s',
 })
 const tabLeftStyle = (c: any) => ({
   ...tabStyle(c),

@@ -210,7 +210,6 @@ const columnStyle = (c: any): React.CSSProperties => ({
   border: `1px solid ${c.border}`,
   borderRadius: 8,
   overflow: 'hidden',
-  transition: 'border-color 0.15s',
 })
 const headRowStyle = (c: any, isToday: boolean): React.CSSProperties => ({
   display: 'flex',

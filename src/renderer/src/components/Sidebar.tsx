@@ -268,7 +268,6 @@ const itemStyle = (c: any) => ({
   cursor: 'pointer',
   color: c.fgSidebar,
   fontSize: 13,
-  transition: 'background 0.1s',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',

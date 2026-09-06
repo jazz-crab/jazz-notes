@@ -102,7 +102,6 @@ const dotStyle: React.CSSProperties = {
   height: 12,
   borderRadius: '50%',
   cursor: 'pointer',
-  transition: 'background 0.5s ease, opacity 0.5s ease',
 }
 const popupStyle = (c: any) => ({
   position: 'absolute' as const,

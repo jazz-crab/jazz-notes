@@ -76,7 +76,6 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onHover, o
         touchAction: 'none',
         width: isActive ? '100%' : '96%',
         marginLeft: isActive ? 0 : 'auto',
-        transition: 'width 0.15s ease, margin-left 0.15s ease',
       }}
     >
       <NoteCard note={note} isActive={isActive} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />

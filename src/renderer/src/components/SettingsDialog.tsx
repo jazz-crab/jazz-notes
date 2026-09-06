@@ -397,7 +397,6 @@ const tabBtnStyle = (c: any, active: boolean) => ({
   fontWeight: active ? 700 : 500,
   cursor: 'pointer',
   background: active ? 'var(--hover)' : 'transparent',
-  transition: 'color 0.15s, background 0.15s',
 })
 const toggleGroupStyle: React.CSSProperties = {
   display: 'flex',
@@ -443,7 +442,6 @@ const fontBtnStyle = (c: any, f: { family: string; color: string }) => ({
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
-  transition: 'border-color 0.15s, background 0.15s',
 })
 const fontCheckStyle = (c: any) => ({
   position: 'absolute' as const,
@@ -474,7 +472,6 @@ const zoomStepBtnStyle = (c: any) => ({
   fontSize: 16,
   lineHeight: 1,
   cursor: 'pointer',
-  transition: 'background 0.15s',
   opacity: 'var(--btn-dim)',
 })
 const zoomValueStyle = (c: any) => ({
@@ -494,7 +491,6 @@ const themeBtnStyle = (c: any) => ({
   border: `2px solid ${c.border}`,
   background: c.bg,
   cursor: 'pointer',
-  transition: 'border-color 0.15s',
   minWidth: 110,
   position: 'relative' as const,
 })
@@ -532,7 +528,6 @@ const switchTrackStyle = (isDark: boolean) => ({
   background: isDark ? 'var(--blue)' : 'var(--border)',
   position: 'relative' as const,
   cursor: 'pointer',
-  transition: 'background 0.2s',
   flexShrink: 0,
 })
 const switchThumbStyle = (isDark: boolean) => ({
@@ -582,7 +577,6 @@ const folderBtnStyle = (c: any) => ({
   fontWeight: 600,
   cursor: 'pointer',
   whiteSpace: 'nowrap' as const,
-  transition: 'background 0.15s',
 })
 const syncInputStyle = (c: any) => ({
   padding: '8px 12px',
@@ -616,7 +610,6 @@ const actionBtnStyle = (c: any) => ({
   fontSize: 12,
   fontWeight: 600,
   cursor: 'pointer',
-  transition: 'background 0.15s',
   opacity: 'var(--btn-dim)',
 })
 const importRowStyle: React.CSSProperties = {
@@ -633,7 +626,6 @@ const importBtnStyle = (c: any) => ({
   fontWeight: 600,
   cursor: 'pointer',
   whiteSpace: 'nowrap' as const,
-  transition: 'background 0.15s',
 })
 const errorTextStyle = (c: any) => ({
   fontSize: 12,
@@ -648,5 +640,4 @@ const syncBtnStyle = (c: any) => ({
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
-  transition: 'background 0.15s',
 })

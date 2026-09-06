@@ -143,7 +143,6 @@ const copyBtnStyle = (c: any) => ({
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
-  transition: 'background 0.15s',
 })
 const configStyle = (c: any) => ({
   fontSize: 11,

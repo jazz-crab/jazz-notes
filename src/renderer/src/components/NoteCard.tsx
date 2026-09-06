@@ -93,7 +93,6 @@ const card = (c: any): React.CSSProperties => ({
   background: c.bgAlt,
   border: `1px solid ${c.border}`,
   cursor: 'pointer',
-  transition: 'border-color 0.1s, background 0.1s',
 })
 const cardActive = (c: any) => ({
   background: mixHex(c.blue, c.bgAlt, 0.18),
