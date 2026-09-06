@@ -93,7 +93,7 @@ const styles: Record<string, React.CSSProperties> = {
   footer: { display: 'flex', gap: 8, marginTop: 6, fontSize: 11 },
 }
 
-const card = (c: any) => ({
+const card = (c: any): React.CSSProperties => ({
   display: 'flex',
   flexDirection: 'column',
   borderRadius: 6,
