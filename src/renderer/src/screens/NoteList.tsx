@@ -72,6 +72,9 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onContextM
         transform: CSS.Transform.toString(transform),
         opacity: isDragging ? 0.5 : 1,
         touchAction: 'none',
+        alignSelf: isActive ? 'flex-start' : 'flex-end',
+        maxWidth: isActive ? '94%' : '72%',
+        transition: 'max-width 0.15s ease, align-self 0.15s ease',
       }}
     >
       <NoteCard note={note} isActive={isActive} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />
@@ -308,16 +311,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   }, [filtered.length])
 
   useEffect(() => {
-    const listEl = listRef.current
-    if (!listEl) return
-    const active = listEl.querySelector<HTMLElement>('[data-active="true"]')
-    if (!active) return
-    const cRect = active.getBoundingClientRect()
-    const lRect = listEl.getBoundingClientRect()
-    const margin = Math.round(cRect.height * 1.2)
-    if (cRect.top < lRect.top + margin || cRect.bottom > lRect.bottom - margin) {
-      active.scrollIntoView({ block: 'nearest' })
-    }
+    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'center' })
   }, [activeIdx, filtered])
 
   useEffect(() => {
