@@ -32,7 +32,6 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
   const isOverdue = due && due < new Date()
   const isFuture = due && due.getTime() > now
   const countdown = isFuture && showCountdown ? formatSmartCountdown(due.getTime() - now, lang) : null
-  const preview = note.body.replace(/^#+\s*/gm, '').replace(/[*~`>-]/g, '').trim().slice(0, 140)
   const cardBg = noteColor ? mixHex(noteColor, colors.bgAlt, 0.1) : undefined
   const folder = parentOf(note.relPath)
 
@@ -55,7 +54,6 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
           {note.meta.done && <span style={doneMarkStyle(colors)}>{'\u2713'}</span>}
           <span style={titleStyle(colors, note.meta.done)}>{note.title || t('untitled', lang)}</span>
         </div>
-        {preview && <div style={previewStyle(colors)}>{preview}</div>}
         <div style={styles.footer}>
           {folder && (
             <span style={pillStyle(colors)} title={folder}>
@@ -69,9 +67,9 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
           )}
           {countdown && <span style={countdownStyle(colors)}>{countdown}</span>}
           {movedFrom && <span style={movedFromStyle(colors)}>{t('moved.from', lang) + ' ' + movedFrom}</span>}
-          {note.meta.updated && (
+          {(note.meta.updated || note.meta.created) && (
             <span style={updatedStyle(colors)}>
-              {new Date(note.meta.updated).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' })}
+              {new Date(note.meta.updated || note.meta.created || '').toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' })}
             </span>
           )}
         </div>
@@ -81,9 +79,9 @@ export default function NoteCard({ note, isActive, isLastOpened, onClick, onCont
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  body: { flex: 1, padding: '10px 12px', minWidth: 0 },
-  header: { display: 'flex', alignItems: 'center', gap: 6 },
-  footer: { display: 'flex', gap: 8, marginTop: 6, fontSize: 11 },
+  body: { flex: 1, padding: '10px 12px', minWidth: 0, overflow: 'hidden' },
+  header: { display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' },
+  footer: { display: 'flex', gap: 8, marginTop: 6, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden' },
 }
 
 const card = (c: any): React.CSSProperties => ({
@@ -119,16 +117,6 @@ const doneMarkStyle = (c: any): React.CSSProperties => ({
   fontWeight: 700,
   fontSize: 13,
   flexShrink: 0,
-})
-const previewStyle = (c: any) => ({
-  fontSize: 12,
-  color: c.comment,
-  marginTop: 4,
-  overflow: 'hidden',
-  display: '-webkit-box',
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: 'vertical' as any,
-  lineClamp: 2,
 })
 const dueStyle = (c: any) => ({ color: c.yellow })
 const overdueStyle = (c: any) => ({ color: c.red, fontWeight: 600 })
