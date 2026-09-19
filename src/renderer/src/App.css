@@ -119,3 +119,28 @@ a {
 @media (max-width: 767px) {
   body { font-size: 14px; }
 }
+
+.modal-dialog {
+  overflow-y: auto;
+}
+.modal-dialog-full {
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
+}
+.modal-overlay-full {
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+}
+@supports (height: 100dvh) {
+  .modal-dialog-full {
+    width: 100dvw;
+    height: 100dvh;
+  }
+  .modal-overlay-full {
+    width: 100dvw;
+    height: 100dvh;
+  }
+}

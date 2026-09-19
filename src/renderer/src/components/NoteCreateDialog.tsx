@@ -4,6 +4,7 @@ import { useNotesStore } from '../stores/notes'
 import { useSettingsStore } from '../stores/settings'
 import { t } from '../utils/i18n'
 import { depthOf, leafName } from '../utils/folder'
+import { useIsMobile } from '../utils/useMedia'
 import Modal from './Modal'
 import ColorPicker from './ColorPicker'
 import DatePicker from './DatePicker'
@@ -20,6 +21,7 @@ export default function NoteCreateDialog({ defaultFolder, onClose, onCreated }: 
   const lang = useSettingsStore((s) => s.lang)
   const folders = useNotesStore((s) => s.folders)
   const createNote = useNotesStore((s) => s.createNote)
+  const isMobile = useIsMobile()
 
   const [title, setTitle] = useState('')
   const [folder, setFolder] = useState(defaultFolder)
@@ -48,8 +50,8 @@ export default function NoteCreateDialog({ defaultFolder, onClose, onCreated }: 
   }
 
   return (
-    <Modal title={t('new.note', lang)} onClose={onClose}>
-      <div style={formStyle}>
+    <Modal title={t('new.note', lang)} onClose={onClose} fullscreen={isMobile}>
+      <div style={isMobile ? formStyleMobile : formStyle}>
         <input
           ref={inputRef}
           style={titleInputStyle(colors)}
@@ -110,6 +112,15 @@ const formStyle: React.CSSProperties = {
   flexDirection: 'column',
   gap: 8,
   minWidth: 320,
+}
+const formStyleMobile: React.CSSProperties = {
+  ...formStyle,
+  gap: 12,
+  width: '780px',
+  maxWidth: '100%',
+  margin: 'auto',
+  padding: '24px',
+  boxSizing: 'border-box',
 }
 const labelStyle = (c: any) => ({
   fontSize: 12,
