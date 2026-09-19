@@ -37,11 +37,18 @@ npm run dev      # electron-vite dev
 npm run build    # electron-vite build
 npm run dist     # build + electron-builder (current platform: AppImage/deb/pacman or nsis)
 npm run dist:all # build linux (AppImage/deb/pacman) + windows (nsis) from Linux (requires wine)
-npm run test     # vitest
+npm run test     # vitest, excludes e2e/ by default
+npm run test:e2e # JAZZ_E2E=1 vitest run e2e/two-device-sync.test.ts — hits a LIVE git remote
+npm run cli:build   # bundle src/cli/index.ts into dist/cli.js (run before `cli`)
+npm run cli         # == node dist/cli.js; needs JAZZ_VAULT=<absolute path> and cli:build first
 npm run web:build    # web client (web/dist) + server bundle (web/dist-server/server.js)
 npm run web:dev      # vite dev server for the browser UI
 npm run web:preview  # preview of the built web client
 ```
+
+There is **no lint or typecheck script** — the project's verification is `npm run test` + `npm run build` (exactly what CI runs). Don't reach for `npm run lint` / `typecheck`; verify changes that way.
+
+The desktop app auto-creates the vault, but the **web server and CLI do not**: they refuse to start unless `JAZZ_VAULT` points to an existing directory (absolute path — Node doesn't expand `~`), and the CLI exits with code 1 if it's unset (see `src/cli/index.ts:287`). The one exception: `git-users` subcommands intentionally work without `JAZZ_VAULT` (they manage the server's users file).
 
 ## Note format and the saver
 
@@ -89,8 +96,9 @@ Beta releases are published automatically from a `v*` tag — see `.github/workf
 
 ## Automation (console-first)
 
-Every feature of the app must be reachable from the console — no function may live only behind the GUI. This keeps the app automatable (cron, SSH, scripts) and makes the desktop UI, the web server, and the CLI thin adapters over the same shared core (`src/main/save.ts`, `src/main/git.ts`, `src/shared/note.ts`).
+Every feature of the app must be reachable from the console — no function may live only behind the GUI. This keeps the app automatable (cron, SSH, scripts) and makes the desktop UI, the web server, and the CLI thin adapters over the same shared core.
 
+- The shared core is `src/shared/service.ts` — a facade over `src/main/save.ts`, `src/main/git.ts`, `src/shared/note.ts`, `src/shared/vault-ops.ts`. All three adapters import it: the Electron main process (`src/main/index.ts`), the web server (`web/server.ts`), and the CLI (`src/cli/index.ts`).
 - Prefer adding operations to the shared core and exposing them through all adapters (IPC + HTTP + CLI) instead of writing UI-only code paths.
 - When you add a UI feature, expose the same operation via the CLI/API in the same change.
 - Notes/git/save logic belongs in `src/shared/` or `src/main/`, never inside React components.
