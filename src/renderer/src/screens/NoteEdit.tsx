@@ -44,6 +44,7 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
   const [sheet, setSheet] = useState<'color' | 'date' | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [editing, setEditing] = useState(initialEditing)
+  const titleRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setCurrentNote(relPath)
@@ -163,6 +164,7 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
       <div style={headerStyle(colors)}>
         <button style={backBtnStyle(colors)} onClick={handleBack}>{'\u2190'}</button>
         <input
+          ref={titleRef}
           style={titleInputStyle(colors)}
           value={currentNote.meta.title}
           placeholder={t('untitled', lang)}
@@ -209,6 +211,9 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
           onChange={handleChange}
           onSave={handleSave}
           editing={editing}
+          onShiftTabFromStart={() => {
+            setTimeout(() => titleRef.current?.focus(), 0)
+          }}
         />
       </div>
 

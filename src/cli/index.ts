@@ -1,4 +1,5 @@
 import * as svc from '../shared/service'
+import { parseNote } from '../shared/note'
 import * as gitUsers from '../../web/git-users'
 
 const VAULT = process.env.JAZZ_VAULT || ''
@@ -17,7 +18,12 @@ function usage(): string {
     `  mkdir <rel>                   create a directory`,
     `  rmdir <rel>                   remove a directory recursively`,
     `  mv <from> <to>                rename/move within the vault`,
+    `  meta <rel> [--title <t>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>] [--done] [--undone]`,
+    `                                update note metadata, preserves body`,
+    `  search <query> [--limit <n>]  full-text search over all notes`,
     `  git commit [--message <m>]    commit changes (default message 'autosave')`,
+    `  git remote [--url <u>]        show or set git remote origin`,
+    `  git status                    show git repository status`,
     `  git sync [--user <u>] [--password <p>]`,
     `  git history [--rel <rel>] [--limit <n>]`,
     `  git show <rel> <hash>`,
@@ -205,10 +211,115 @@ export async function run(args: string[]): Promise<void> {
       fail('unknown git-users command')
     }
 
+    case 'meta': {
+      const rel = rest[0]
+      if (!rel) fail('usage: meta <rel> [--title <t>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>] [--done] [--undone]')
+      const raw = await svc.readFile(VAULT, rel)
+      const parsed = parseNote(raw)
+      const existingMeta = parsed.meta
+      const content = parsed.content
+      const draft: svc.NoteDraft = {
+        title: existingMeta.title,
+        due: existingMeta.due,
+        color: existingMeta.color,
+        priority: existingMeta.priority,
+        tags: existingMeta.tags,
+        done: existingMeta.done,
+      }
+      let hasFlags = false
+      let done: boolean | undefined
+      let undone: boolean | undefined
+      for (let i = 1; i < rest.length; i++) {
+        const key = rest[i]
+        const value = rest[i + 1]
+        if (key === '--title' && value) {
+          draft.title = value
+          hasFlags = true
+          i++
+        } else if (key === '--due' && value) {
+          draft.due = value
+          hasFlags = true
+          i++
+        } else if (key === '--color' && value) {
+          draft.color = value
+          hasFlags = true
+          i++
+        } else if (key === '--priority' && value) {
+          draft.priority = parseInt(value, 10) as svc.NoteDraft['priority']
+          hasFlags = true
+          i++
+        } else if (key === '--tags' && value) {
+          draft.tags = value.split(',')
+          hasFlags = true
+          i++
+        } else if (key === '--done') {
+          done = true
+          hasFlags = true
+        } else if (key === '--undone') {
+          undone = true
+          hasFlags = true
+        }
+      }
+      if (!hasFlags) fail('usage: meta <rel> [--title <t>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>] [--done] [--undone]')
+      if (done && undone) fail('--done and --undone cannot be used together')
+      if (done !== undefined) draft.done = done
+      if (undone !== undefined) draft.done = false
+      draft.text = content
+      const result = await svc.updateNote(VAULT, rel, draft)
+      console.log(result.relPath)
+      return
+    }
+
+    case 'search': {
+      const query = rest[0]
+      if (!query) fail('usage: search <query> [--limit <n>]')
+      let limit = 20
+      for (let i = 1; i < rest.length; i++) {
+        if (rest[i] === '--limit' && rest[i + 1]) {
+          limit = Number(rest[i + 1])
+          i++
+        }
+      }
+      const results = await svc.searchNotes(VAULT, query, limit)
+      for (const r of results) console.log(`${r.relPath}\t${r.title}\t${r.snippet}`)
+      return
+    }
+
     case 'git': {
       const sub = rest[0]
-      if (!sub) fail('usage: git <commit|sync|history|show|restore>')
+      if (!sub) fail('usage: git <remote|status|commit|sync|history|show|restore>')
       await svc.gitEnsure(VAULT, '')
+      if (sub === 'remote') {
+        let url: string | undefined
+        for (let i = 1; i < rest.length; i++) {
+          if (rest[i] === '--url' && rest[i + 1]) {
+            url = rest[i + 1]
+            i++
+          }
+        }
+        if (url) {
+          await svc.gitEnsure(VAULT, url)
+          console.log(`remote: ${url}`)
+        } else {
+          const existing = await svc.gitRemote(VAULT)
+          if (!existing) fail('no remote configured')
+          console.log(existing)
+        }
+        return
+      }
+      if (sub === 'status') {
+        const summary = await svc.gitStatusSummary(VAULT)
+        if (summary.remote) console.log(`remote: ${summary.remote}`)
+        else console.log('remote: none')
+        console.log(`branch: ${summary.branch}`)
+        if (summary.lastCommit) {
+          console.log(`last commit: ${summary.lastCommit.shortHash} ${summary.lastCommit.message} (${summary.lastCommit.date})`)
+        } else {
+          console.log('last commit: (none)')
+        }
+        console.log(`uncommitted: ${summary.uncommitted}`)
+        return
+      }
       if (sub === 'commit') {
         let message = 'autosave'
         for (let i = 1; i < rest.length; i++) {

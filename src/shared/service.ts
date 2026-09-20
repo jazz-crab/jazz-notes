@@ -22,10 +22,14 @@ import {
   history,
   show,
   restore,
+  getRemoteUrl,
+  getStatusSummary,
+  type StatusSummary,
 } from '../main/git'
 
 export type { NoteDraft, SavedNoteInfo } from './note'
 export type { GitAuth, GitCommitInfo, SyncResult } from './types'
+export type { StatusSummary } from '../main/git'
 export { readDirRecursive } from './vault-ops'
 
 export async function listNotes(vault: string): Promise<Array<{ relPath: string; title: string }>> {
@@ -41,6 +45,47 @@ export async function listNotes(vault: string): Promise<Array<{ relPath: string;
     }
   }
   return notes
+}
+
+export interface SearchResult {
+  relPath: string
+  title: string
+  snippet: string
+}
+
+export async function searchNotes(vault: string, query: string, limit = 20): Promise<SearchResult[]> {
+  const entries = await readDirRecursive(vault)
+  const results: Array<{ relPath: string; title: string; snippet: string; titleMatch: boolean }> = []
+  const q = query.toLowerCase()
+  for (const rel of entries) {
+    if (rel.endsWith('/')) continue
+    if (results.length >= limit * 2) break
+    try {
+      const raw = await readVaultFile(vault, rel)
+      const { meta, content } = parseNote(raw)
+      const haystackTitle = meta.title.toLowerCase()
+      const haystackContent = content.toLowerCase()
+      const idxTitle = haystackTitle.indexOf(q)
+      const idxContent = idxTitle !== -1 ? -1 : haystackContent.indexOf(q)
+      if (idxTitle === -1 && idxContent === -1) continue
+      let snippet: string
+      if (idxTitle !== -1) {
+        snippet = content.replace(/\n/g, ' ').slice(0, 80) || '(empty)'
+      } else {
+        const start = Math.max(0, idxContent - 40)
+        const end = Math.min(content.length, idxContent + query.length + 40)
+        snippet = content.slice(start, end).replace(/\n/g, ' ')
+      }
+      results.push({ relPath: rel, title: meta.title, snippet, titleMatch: idxTitle !== -1 })
+    } catch {
+      // skip unreadable files
+    }
+  }
+  results.sort((a, b) => {
+    if (a.titleMatch !== b.titleMatch) return a.titleMatch ? -1 : 1
+    return 0
+  })
+  return results.slice(0, limit)
 }
 
 export function readFile(vault: string, rel: string): Promise<string> {
@@ -113,4 +158,12 @@ export function gitShow(vault: string, relPath: string, hash: string): Promise<s
 
 export function gitRestore(vault: string, relPath: string, hash: string): Promise<string | null> {
   return restore(vault, relPath, hash)
+}
+
+export function gitRemote(vault: string): Promise<string | null> {
+  return getRemoteUrl(vault)
+}
+
+export function gitStatusSummary(vault: string): Promise<StatusSummary> {
+  return getStatusSummary(vault)
 }

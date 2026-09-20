@@ -337,6 +337,62 @@ export async function show(repoDir: string, relPath: string, hash: string): Prom
   }
 }
 
+export async function getRemoteUrl(repoDir: string): Promise<string | null> {
+  try {
+    const remotes = await git.listRemotes({ fs, dir: repoDir })
+    const origin = remotes.find((r) => r.remote === 'origin')
+    return origin?.url ?? null
+  } catch {
+    return null
+  }
+}
+
+export interface StatusSummary {
+  remote: string | null
+  branch: string
+  lastCommit: { hash: string; shortHash: string; message: string; date: string } | null
+  uncommitted: number
+}
+
+export async function getStatusSummary(repoDir: string): Promise<StatusSummary> {
+  const remote = await getRemoteUrl(repoDir)
+
+  let branch = 'main'
+  try {
+    const current = await git.currentBranch({ fs, dir: repoDir })
+    if (current) branch = current
+  } catch {
+    // keep default
+  }
+
+  let lastCommit: StatusSummary['lastCommit'] = null
+  try {
+    const entries = await git.log({ fs, dir: repoDir, depth: 1 })
+    if (entries.length > 0) {
+      lastCommit = {
+        hash: entries[0].oid,
+        shortHash: entries[0].oid.slice(0, 7),
+        message: entries[0].commit.message.replace(/\n+$/, ''),
+        date: new Date(entries[0].commit.committer.timestamp * 1000).toISOString(),
+      }
+    }
+  } catch {
+    // no commits yet
+  }
+
+  let uncommitted = 0
+  try {
+    const status = await git.statusMatrix({ fs, dir: repoDir })
+    for (const [, head, workdir] of status) {
+      if (workdir !== head) uncommitted++
+    }
+  } catch {
+    // not a repo yet
+  }
+
+  return { remote, branch, lastCommit, uncommitted }
+}
+
 export async function restore(repoDir: string, relPath: string, hash: string): Promise<string | null> {
   const content = await show(repoDir, relPath, hash)
   if (content === null) return null

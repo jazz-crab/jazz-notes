@@ -25,9 +25,10 @@ interface Props {
   onChange: (value: string) => void
   onSave: () => void
   editing?: boolean
+  onShiftTabFromStart?: () => void
 }
 
-export default function NoteEditor({ documentId, value, onChange, onSave, editing = false }: Props) {
+export default function NoteEditor({ documentId, value, onChange, onSave, editing = false, onShiftTabFromStart }: Props) {
   const handleRef = useRef<AtomicCodeMirrorEditorHandle | null>(null)
   const onChangeRef = useRef(onChange)
   const onSaveRef = useRef(onSave)
@@ -108,6 +109,16 @@ export default function NoteEditor({ documentId, value, onChange, onSave, editin
             run: () => {
               onSaveRef.current()
               return true
+            },
+          },
+          {
+            key: 'Shift-Tab',
+            run: (view) => {
+              if (view.state.selection.main.head === 0) {
+                onShiftTabFromStart?.()
+                return true
+              }
+              return false
             },
           },
           { key: 'Mod-z', run: doUndo },

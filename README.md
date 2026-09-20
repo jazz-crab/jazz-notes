@@ -25,8 +25,10 @@ Inspired by [Obsidian](https://obsidian.md): a plain-Markdown vault with inline 
 - **New note goes to the selected folder** — when a folder is active in the sidebar, new notes are created inside it; a new folder is created inside the selected one too. The vault root is selectable (named after the storage folder), so you can create notes and folders at the root level as well
 - **Search** — full-text via a SQLite FTS5 index (`.jazz/index.db` inside the vault, kept in sync on every change); instant results with snippet highlighting on both desktop and web
 - **Filters** — All / Today / Tomorrow / This week / Later / No date
-- **Sorting** — by last updated / created / due date
-- **Metadata** — title, due date, color, auto-assigned ID, created/updated timestamps; the note color highlights the card in the list and the **editor background/text**; a **folder pill badge** marks notes living inside a folder
+- **Sorting** — by date (last updated/created) or by due date, toggleable in the toolbar
+- **Calendar view** — press `Tab` to switch the list to a day-column view (yesterday / today / tomorrow / the day after); drag a note card onto another day to move its due date. Empty columns hint; prev/next day navigation with `‹`/`›`
+- **Done** — mark a note as done from the context menu (✓ / ✕); done notes are dimmed, by default hidden (toggle in Settings → Show completed)
+- **Metadata** — title, due date, color, done flag, auto-assigned ID, created/updated timestamps; the note color highlights the card in the list and the **editor background/text**; a **folder pill badge** marks notes living inside a folder
 - **Countdown to the next due note** — always visible at the top of the main screen, ticks in real time; can be hidden (the × on the bar or a toggle in Settings), preference is remembered
 
 ### Reliability
@@ -234,7 +236,11 @@ node dist/cli.js list   # or invoke the bundle directly
 | `mkdir <rel>` | Create a directory |
 | `rmdir <rel>` | Remove a directory recursively |
 | `mv <from> <to>` | Rename / move within the vault |
+| `meta <rel> [--title <t>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>] [--done] [--undone]` | Update note metadata, preserves body |
+| `search <query> [--limit <n>]` | Full-text search over all notes |
 | `git commit [--message <m>]` | Commit changes (default message `autosave`) |
+| `git remote [--url <u>]` | Show or set git remote origin |
+| `git status` | Show git repository status |
 | `git sync [--user <u>] [--password <p>]` | Push / pull against the configured remote |
 | `git history [--rel <rel>] [--limit <n>]` | Show git history |
 | `git show <rel> <hash>` | Show a file at a given commit |

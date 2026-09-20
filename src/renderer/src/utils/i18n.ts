@@ -156,6 +156,7 @@ const ru: Record<string, string> = {
   'calendar.empty': 'Нет дел на эти даты',
   'calendar.empty.dates': 'Нет запланированных дел на эти даты',
   'close': 'Закрыть',
+  'scroll.top': 'Прокрутить вверх',
 }
 
 const en: Record<string, string> = {
@@ -309,6 +310,7 @@ const en: Record<string, string> = {
   'calendar.empty': 'No tasks on these dates',
   'calendar.empty.dates': 'No scheduled tasks on these dates',
   'close': 'Close',
+  'scroll.top': 'Scroll to top',
 }
 
 const strings: Record<Lang, Record<string, string>> = { ru, en }

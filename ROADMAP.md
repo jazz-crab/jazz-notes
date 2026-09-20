@@ -13,6 +13,8 @@ Legend: `[x] done · [ ] next · [~] deferred`
 - [x] **Nested folders** — folders can nest at any depth; a folder can be moved into another folder or to root via the right-click menu.
 - [x] **Note context menu** — right-click on a note: rename, change date, change color, delete.
 - [x] **Countdown to the next due note** — a live-updating bar at the top of the main screen; hideable via the × or a Settings toggle, the preference is remembered.
+- [x] **Calendar view** — press `Tab` in the note list to switch to a day-column view (yesterday / today / tomorrow / the day after) with drag & drop of notes onto other days to move their due date.
+- [x] **Done flag** — mark notes as done from the right-click menu (✓ / ✕); done notes are dimmed, hidden by default until "Show completed" is enabled in Settings.
 - [x] **Vim-style hotkeys** — keyboard navigation without mouse: `j`/`k` to move between notes, `gg`/`G` to jump to first/last note, `/` to focus search, `r` to rename, `d`/`x` to delete, `n` to create, `Enter`/`o` to open.
 
 ### Correctness & cleanup

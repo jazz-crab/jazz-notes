@@ -118,6 +118,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const [showCreate, setShowCreate] = useState(false)
   const [activeIdx, setActiveIdx] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const lastGTime = useRef(0)
@@ -413,7 +414,8 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         {showCalendar ? (
           <CalendarView onSelectNote={onSelectNote} />
         ) : (
-        <div ref={listRef} style={{ ...listStyle, ...(isMobile ? { padding: '6px 12px' } : {}) }}>
+        <div ref={listRef} style={{ ...listStyle, ...(isMobile ? { padding: '6px 12px' } : {}) }}
+          onScroll={(e) => setShowScrollTop(e.currentTarget.scrollTop > 150)}>
           {loading && <div style={loadingStyle(colors)}>{t('loading', lang)}</div>}
           {!loading && filtered.length === 0 && (
             !vaultExists ? (
@@ -453,6 +455,15 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
             />
           ))}
         </div>
+        )}
+        {!showCalendar && showScrollTop && (
+          <button
+            style={scrollTopBtnStyle(colors)}
+            onClick={() => listRef.current?.scrollTo({ top: 0 })}
+            title={t('scroll.top', lang)}
+          >
+            <span style={{ fontFamily: 'Symbols Nerd Font', fontSize: 18, lineHeight: 1, display: 'block' }}>{'\uf077'}</span>
+          </button>
         )}
       </div>
 
@@ -629,6 +640,7 @@ const mainStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',
+  position: 'relative',
 }
 const topBarStyle: React.CSSProperties = {
   padding: '12px 20px 8px',
@@ -728,4 +740,21 @@ const moveTargetStyle = (c: any): React.CSSProperties => ({
   whiteSpace: 'nowrap' as const,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+})
+const scrollTopBtnStyle = (c: any): React.CSSProperties => ({
+  position: 'absolute',
+  bottom: 12,
+  right: 12,
+  zIndex: 10,
+  width: 36,
+  height: 36,
+  borderRadius: '50%',
+  background: c.bgAlt,
+  border: `1px solid ${c.border}`,
+  color: c.fgDark,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  opacity: 0.85,
 })
