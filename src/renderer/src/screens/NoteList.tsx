@@ -272,6 +272,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
         useSettingsStore.getState().openSettings()
         return
       }
+      if (showCalendar) return
       if (key === 'g') {
         e.preventDefault()
         const now = Date.now()
@@ -321,7 +322,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
     }
     window.addEventListener('keydown', handler, true)
     return () => window.removeEventListener('keydown', handler, true)
-  }, [isVisible, filtered, activeIdx, searchQuery, onSelectNote])
+  }, [isVisible, filtered, activeIdx, searchQuery, onSelectNote, showCalendar])
 
   useEffect(() => {
     setActiveIdx((i) => (i >= filtered.length ? Math.max(0, filtered.length - 1) : i))

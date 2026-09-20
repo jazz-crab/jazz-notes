@@ -8,7 +8,12 @@ import { useColors } from '../theme'
 import { t, localeOf } from '../utils/i18n'
 import { partitionByDay, dayKeyOffset, localDateFromKey } from '../utils/calendar'
 import NoteCard from './NoteCard'
+import { dialogCount } from '../stores/ui'
 import type React from 'react'
+
+const RU_TO_LATIN: Record<string, string> = {
+  'о': 'j', 'л': 'k', 'д': 'l', 'щ': 'o', 'п': 'g', 'р': 'h',
+}
 
 const VISIBLE_COUNT = 3
 
@@ -20,6 +25,7 @@ interface ColumnProps {
   column: { key: string; offset: number; notes: Note[] }
   isToday: boolean
   onOpen: (relPath: string) => void
+  activeRelPath: string | null
 }
 
 const DAY_LABEL: Record<number, string> = {
@@ -44,7 +50,7 @@ function ColumnHeader({ offset, dayKey, lang }: { offset: number; dayKey: string
   )
 }
 
-function DraggableCard({ note, onOpen }: { note: Note; onOpen: (p: string) => void }) {
+function DraggableCard({ note, isActive, onOpen }: { note: Note; isActive: boolean; onOpen: (p: string) => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: note.relPath })
   return (
     <div
@@ -53,12 +59,12 @@ function DraggableCard({ note, onOpen }: { note: Note; onOpen: (p: string) => vo
       {...listeners}
       style={{ opacity: isDragging ? 0.4 : 1, touchAction: 'none' }}
     >
-      <NoteCard note={note} isActive={false} onClick={() => onOpen(note.relPath)} />
+      <NoteCard note={note} isActive={isActive} onClick={() => onOpen(note.relPath)} />
     </div>
   )
 }
 
-function Column({ column, isToday, onOpen }: ColumnProps) {
+function Column({ column, isToday, onOpen, activeRelPath }: ColumnProps) {
   const colors = useColors()
   const { setNodeRef, isOver } = useDroppable({ id: column.key })
   const lang = useSettingsStore((s) => s.lang)
@@ -77,7 +83,7 @@ function Column({ column, isToday, onOpen }: ColumnProps) {
       </div>
       <div style={cardListStyle}>
         {column.notes.map((note) => (
-          <DraggableCard key={note.relPath} note={note} onOpen={onOpen} />
+          <DraggableCard key={note.relPath} note={note} isActive={note.relPath === activeRelPath} onOpen={onOpen} />
         ))}
       </div>
     </div>
@@ -93,6 +99,8 @@ export default function CalendarView({ onSelectNote }: Props) {
   const lang = useSettingsStore((s) => s.lang)
   const updateNoteMetaByPath = useNotesStore((s) => s.updateNoteMetaByPath)
   const [startOffset, setStartOffset] = useState(0)
+  const [activeRelPath, setActiveRelPath] = useState<string | null>(null)
+  const lastGTime = useRef(0)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -116,9 +124,84 @@ export default function CalendarView({ onSelectNote }: Props) {
     [filteredNotes, visibleOffsets, showDone]
   )
 
+  const flatNotes = useMemo(
+    () => data.columns.flatMap((c) => c.notes),
+    [data.columns]
+  )
+
+  useEffect(() => {
+    setActiveRelPath((prev) => {
+      if (prev === null) return null
+      return flatNotes.some((n) => n.relPath === prev) ? prev : null
+    })
+  }, [flatNotes])
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ left: 0 })
   }, [startOffset])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (dialogCount() > 0) return
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement
+      if (typing) return
+      const key = RU_TO_LATIN[e.key] ?? e.key
+      if (!['h', 'j', 'k', 'l', 'o', 'Enter', 'g', 'G'].includes(key)) return
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      if (key === 'h') {
+        setStartOffset((o) => o - 1)
+        return
+      }
+      if (key === 'l') {
+        setStartOffset((o) => o + 1)
+        return
+      }
+      if (key === 'g') {
+        const now = Date.now()
+        if (now - lastGTime.current < 500) {
+          lastGTime.current = 0
+          if (flatNotes.length > 0) setActiveRelPath(flatNotes[0].relPath)
+        } else {
+          lastGTime.current = now
+        }
+        return
+      }
+      if (key === 'G') {
+        if (flatNotes.length > 0) setActiveRelPath(flatNotes[flatNotes.length - 1].relPath)
+        return
+      }
+      if (flatNotes.length === 0) return
+      if (key === 'j') {
+        if (activeRelPath === null) {
+          setActiveRelPath(flatNotes[0].relPath)
+          return
+        }
+        const idx = flatNotes.findIndex((n) => n.relPath === activeRelPath)
+        if (idx >= 0 && idx < flatNotes.length - 1) {
+          setActiveRelPath(flatNotes[idx + 1].relPath)
+        }
+        return
+      }
+      if (key === 'k') {
+        if (activeRelPath === null) {
+          setActiveRelPath(flatNotes[flatNotes.length - 1].relPath)
+          return
+        }
+        const idx = flatNotes.findIndex((n) => n.relPath === activeRelPath)
+        if (idx > 0) {
+          setActiveRelPath(flatNotes[idx - 1].relPath)
+        }
+        return
+      }
+      if (key === 'o' || key === 'Enter') {
+        if (activeRelPath !== null) onSelectNote(activeRelPath)
+        return
+      }
+    }
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
+  }, [flatNotes, activeRelPath, onSelectNote])
 
   const onDragEnd = (e: DragEndEvent) => {
     const over = e.over
@@ -144,7 +227,7 @@ export default function CalendarView({ onSelectNote }: Props) {
         </button>
         <div ref={scrollRef} style={columnsRowStyle}>
           {data.columns.map((col) => (
-            <Column key={col.key} column={col} isToday={col.offset === 0} onOpen={onSelectNote} />
+            <Column key={col.key} column={col} isToday={col.offset === 0} onOpen={onSelectNote} activeRelPath={activeRelPath} />
           ))}
         </div>
         <button
