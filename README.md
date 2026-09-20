@@ -263,6 +263,11 @@ node dist/cli.js git commit --message "wip"
 
 See [ROADMAP.md](ROADMAP.md) for the current development plan.
 
+## Contributors
+
+Thanks to everyone who helped:
+- [Vasily Eremin (x32b)](https://github.com/x32b)
+
 ## License
 
 MIT
