@@ -125,6 +125,8 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const lastKeyNav = useRef(0)
   const isMobile = useIsMobile()
 
+  const showCalendar = view === 'kanban' && !searchQuery && (sidebarSelection.type === 'all' || sidebarSelection.type === 'folder')
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
@@ -337,8 +339,6 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   }
 
   const closeAction = () => setNoteAction(null)
-
-  const showCalendar = view === 'kanban' && !searchQuery && (sidebarSelection.type === 'all' || sidebarSelection.type === 'folder')
 
   const sortOptions: Array<{ value: SortBy; label: string }> = [
     { value: 'date', label: t('sort.by.date', lang) },
