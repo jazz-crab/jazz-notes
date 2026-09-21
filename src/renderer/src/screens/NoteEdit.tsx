@@ -6,6 +6,7 @@ import type { NoteMeta } from '../utils/frontmatter'
 import { mixHex } from '../utils/color'
 import { debounce } from '../utils/debounce'
 import { t, localeOf } from '../utils/i18n'
+import { useIsMobile } from '../utils/useMedia'
 import { replaceFirstHeading } from '../utils/note'
 import NoteEditor from '../components/NoteEditor'
 import DatePicker from '../components/DatePicker'
@@ -43,8 +44,10 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
   const [lastError, setLastError] = useState<string | null>(null)
   const [sheet, setSheet] = useState<'color' | 'date' | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const isMobile = useIsMobile()
   const [editing, setEditing] = useState(initialEditing)
-  const titleRef = useRef<HTMLInputElement>(null)
+const titleRef = useRef<HTMLInputElement>(null)
+  const tapTargetRef = useRef<{ clientX: number; clientY: number } | null>(null)
 
   useEffect(() => {
     setCurrentNote(relPath)
@@ -204,6 +207,14 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
           ...(editorTint ? { '--atomic-editor-bg': editorTint } as any : {}),
           ...(editorText ? { '--atomic-editor-fg': editorText } as any : {}),
         }}
+        onClick={(e) => {
+          if (isMobile && !editing) {
+            const target = e.target as Element | null
+            if (target?.closest('.cm-atomic-task-checkbox, .cm-atomic-link, .cm-atomic-bullet')) return
+            tapTargetRef.current = { clientX: e.clientX, clientY: e.clientY }
+            setEditing(true)
+          }
+        }}
       >
         <NoteEditor
           documentId={currentNote.relPath}
@@ -211,9 +222,10 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
           onChange={handleChange}
           onSave={handleSave}
           editing={editing}
-          onShiftTabFromStart={() => {
+onShiftTabFromStart={() => {
             setTimeout(() => titleRef.current?.focus(), 0)
           }}
+          tapTargetRef={tapTargetRef}
         />
       </div>
 
