@@ -75,6 +75,10 @@ export async function ensureRepo(repoDir: string, remoteUrl: string): Promise<st
   if (!existsSync(join(repoDir, '.git'))) {
     await git.init({ fs, dir: repoDir, defaultBranch: DEFAULT_BRANCH })
   }
+  const gitignorePath = join(repoDir, '.gitignore')
+  if (!existsSync(gitignorePath)) {
+    await writeFile(gitignorePath, '\n.jazz/\n', 'utf-8')
+  }
   await git.setConfig({ fs, dir: repoDir, path: 'user.name', value: AUTHOR.name })
   await git.setConfig({ fs, dir: repoDir, path: 'user.email', value: AUTHOR.email })
   if (remoteUrl) {
@@ -95,6 +99,7 @@ export async function commitAll(repoDir: string, message = 'autosave'): Promise<
   const headOid = await git.resolveRef({ fs, dir: repoDir, ref: 'HEAD' }).catch(() => null)
   let changed = false
   for (const [filepath, head, workdir] of status) {
+    if (filepath.startsWith('.jazz/') || filepath.startsWith('.git/') || filepath === '.gitignore') continue
     if (workdir === 0) {
       if (head !== 0) {
         await git.remove({ fs, dir: repoDir, filepath })
@@ -383,7 +388,8 @@ export async function getStatusSummary(repoDir: string): Promise<StatusSummary> 
   let uncommitted = 0
   try {
     const status = await git.statusMatrix({ fs, dir: repoDir })
-    for (const [, head, workdir] of status) {
+    for (const [filepath, head, workdir] of status) {
+      if (filepath.startsWith('.jazz/') || filepath.startsWith('.git/') || filepath === '.gitignore') continue
       if (workdir !== head) uncommitted++
     }
   } catch {

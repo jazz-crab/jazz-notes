@@ -37,7 +37,7 @@ function startWatching(notesPath: string) {
     persistent: true,
     ignoreInitial: true,
     depth: 10,
-    ignored: /(^|[\/\\])\.git(\/|$)/,
+    ignored: /(^|[\/\\])(\.git|\.jazz)(\/|$)/,
   })
   watcher.on('all', (_event, filePath) => {
     const rel = filePath.replace(notesPath, '').replace(/\\/g, '/')

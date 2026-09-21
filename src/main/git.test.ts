@@ -112,6 +112,23 @@ describe('ensureRepo + commitAll', () => {
     const tree = await git.readTree({ fs, dir, oid: head })
     expect(tree.tree.some((e) => e.path === 'a.md')).toBe(false)
   })
+
+  it('creates a .gitignore that excludes .jazz and never commits .jazz settings', async () => {
+    await ensureRepo(dir, '')
+    expect(fs.readFileSync(join(dir, '.gitignore'), 'utf-8')).toBe('\n.jazz/\n')
+
+    fs.mkdirSync(join(dir, '.jazz'), { recursive: true })
+    fs.writeFileSync(join(dir, '.jazz', 'settings.json'), '{"syncPass":"secret"}\n')
+    fs.writeFileSync(join(dir, 'a.md'), 'x\n')
+    expect(await commitAll(dir)).toBe(true)
+
+    const head = await git.resolveRef({ fs, dir, ref: 'HEAD' })
+    const tree = await git.readTree({ fs, dir, oid: head })
+    const paths = tree.tree.map((e) => e.path)
+    expect(paths).toContain('a.md')
+    expect(paths).not.toContain('.gitignore')
+    expect(paths).not.toContain('.jazz/settings.json')
+  })
 })
 
 describe('history / show / restore', () => {

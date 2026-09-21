@@ -10,6 +10,11 @@ import {
   renameVault,
 } from './vault-ops'
 import {
+  loadSettings as coreLoadSettings,
+  saveSettings as coreSaveSettings,
+  type Settings,
+} from './settings'
+import {
   saveNotes as coreSaveNotes,
   updateNote as coreUpdateNote,
   writeRaw as coreWriteRaw,
@@ -31,6 +36,7 @@ import {
 export type { NoteDraft, SavedNoteInfo } from './note'
 export type { GitAuth, GitCommitInfo, SyncResult } from './types'
 export type { StatusSummary } from '../main/git'
+export type { Settings } from './settings'
 export { readDirRecursive } from './vault-ops'
 
 export async function listNotes(vault: string): Promise<Array<{ relPath: string; title: string }>> {
@@ -127,6 +133,14 @@ export function vaultExists(vault: string): boolean {
 
 export function getPath(vault: string): string {
   return vault
+}
+
+export function loadSettings(vault: string): Promise<Settings> {
+  return coreLoadSettings(vault)
+}
+
+export function saveSettings(vault: string, patch: Partial<Settings>): Promise<Settings> {
+  return coreSaveSettings(vault, patch)
 }
 
 export function gitEnsure(vault: string, remoteUrl: string): Promise<string> {
