@@ -22,6 +22,9 @@ function usage(): string {
     `  meta <rel> [--title <t>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>] [--done] [--undone]`,
     `                                update note metadata, preserves body`,
     `  search <query> [--limit <n>]  full-text search over all notes`,
+    `  settings                    show settings as JSON`,
+    `  settings get <key>          print one setting`,
+    `  settings set <key> <value>  set a setting (string/boolean/number)`,
     `  git commit [--message <m>]    commit changes (default message 'autosave')`,
     `  git remote [--url <u>]        show or set git remote origin`,
     `  git status                    show git repository status`,
@@ -49,6 +52,29 @@ function readStdin(): Promise<string> {
 
 function fail(msg: string): never {
   throw new Error(msg)
+}
+
+const SETTINGS_KEYS: Record<string, { type: 'string' | 'boolean' | 'number' }> = {
+  palette: { type: 'string' },
+  lang: { type: 'string' },
+  font: { type: 'string' },
+  notesPath: { type: 'string' },
+  syncRemote: { type: 'string' },
+  syncUser: { type: 'string' },
+  syncPass: { type: 'string' },
+  isDark: { type: 'boolean' },
+  showCountdown: { type: 'boolean' },
+  showDone: { type: 'boolean' },
+  autoSync: { type: 'boolean' },
+  uiZoom: { type: 'number' },
+  editorWidth: { type: 'number' },
+}
+
+function parseBool(v: string): boolean | null {
+  const low = v.toLowerCase()
+  if (low === 'true' || low === '1' || low === 'yes' || low === 'on') return true
+  if (low === 'false' || low === '0' || low === 'no' || low === 'off') return false
+  return null
 }
 
 export async function run(args: string[]): Promise<void> {
@@ -428,6 +454,68 @@ export async function run(args: string[]): Promise<void> {
         return
       }
       fail('unknown git command')
+    }
+
+    case 'settings': {
+      const sub = rest[0]
+      if (!sub) {
+        const s = await svc.loadSettings(VAULT)
+        if (!svc.settingsExist(VAULT)) {
+          process.stderr.write('note: no settings file yet — run "settings set <key> <value>" to create it\n')
+        }
+        console.log(JSON.stringify(s, null, 2))
+        return
+      }
+
+      if (sub === 'get') {
+        const key = rest[1]
+        if (!key) fail('usage: settings get <key>')
+        if (!SETTINGS_KEYS[key]) fail(`unknown settings key: ${key}`)
+        const s = await svc.loadSettings(VAULT)
+        const value = s[key as keyof svc.Settings]
+        console.log(value === null ? 'null' : String(value))
+        return
+      }
+
+      if (sub === 'set') {
+        const key = rest[1]
+        const value = rest[2]
+        if (!key) fail('usage: settings set <key> <value>')
+        if (!SETTINGS_KEYS[key]) fail(`unknown settings key: ${key}`)
+        if (value === undefined) fail(`usage: settings set ${key} <value>`)
+        const meta = SETTINGS_KEYS[key]
+        let parsedValue: string | boolean | number
+        if (meta.type === 'boolean') {
+          const b = parseBool(value)
+          if (b === null) fail(`expected true or false for ${key}`)
+          parsedValue = b
+        } else if (meta.type === 'number') {
+          parsedValue = Number(value)
+          if (Number.isNaN(parsedValue)) fail(`expected a number for ${key}`)
+        } else {
+          parsedValue = value
+        }
+        let user: string | undefined
+        let password: string | undefined
+        for (let i = 3; i < rest.length; i++) {
+          if (rest[i] === '--user' && rest[i + 1]) {
+            user = rest[i + 1]
+            i++
+          } else if (rest[i] === '--password' && rest[i + 1]) {
+            password = rest[i + 1]
+            i++
+          }
+        }
+        const patch: Partial<svc.Settings> = { [key]: parsedValue as never }
+        if (user) patch.syncUser = user
+        if (password) patch.syncPass = password
+        const result = await svc.saveSettings(VAULT, patch)
+        const finalValue = result[key as keyof svc.Settings]
+        console.log(`settings: ${key} = ${finalValue === null ? 'null' : String(finalValue)}`)
+        return
+      }
+
+      fail('usage: settings <get <key>|set <key> <value>>')
     }
 
     default:
