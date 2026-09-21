@@ -178,6 +178,15 @@ const server = createServer(async (req, res) => {
       if (req.method === 'GET' && p === '/api/history') {
         return send(res, 200, { data: await readHistory() })
       }
+      if (req.method === 'GET' && p === '/api/settings') {
+        const settings = await svc.loadSettings(VAULT)
+        return send(res, 200, { settings, exists: svc.settingsExist(VAULT) })
+      }
+      if (req.method === 'POST' && p === '/api/settings') {
+        const { patch } = body as { patch?: Partial<svc.Settings> }
+        const settings = await svc.saveSettings(VAULT, patch || {})
+        return send(res, 200, { settings })
+      }
       if (req.method === 'POST' && p === '/api/write') {
         if (typeof body.content === 'string' && body.rel) {
           await svc.writeRaw(VAULT, String(body.rel), body.content, scheduleCommit)

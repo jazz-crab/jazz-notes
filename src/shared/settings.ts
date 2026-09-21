@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -116,4 +117,8 @@ export async function saveSettings(vault: string, patch: Partial<Settings>): Pro
   await mkdir(join(vault, JAZZ_DIR_NAME), { recursive: true })
   await writeFile(file, JSON.stringify(next, null, 2), 'utf-8')
   return next
+}
+
+export function settingsExist(vault: string): boolean {
+  return existsSync(settingsFilePath(vault))
 }

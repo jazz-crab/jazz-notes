@@ -1,5 +1,6 @@
 import type { SyncResult, GitCommitInfo, GitAuth } from '../shared/types'
 import type { NoteDraft, SavedNoteInfo } from '../shared/note'
+import type { Settings } from '../shared/settings'
 
 export interface JazzAPI {
   getPath: () => Promise<string>
@@ -23,6 +24,8 @@ export interface JazzAPI {
   indexClose: () => Promise<boolean>
   readHistory: () => Promise<Record<string, unknown>>
   writeHistory: (data: unknown) => Promise<boolean>
+  readSettings: (dirPath?: string) => Promise<{ settings: Settings; exists: boolean }>
+  writeSettings: (dirPath: string | undefined, patch: Partial<Settings>) => Promise<Settings>
   gitEnsure: (repoDir: string, remoteUrl: string) => Promise<boolean>
   gitCommit: (repoDir: string, message?: string) => Promise<boolean>
   gitSync: (repoDir: string, auth?: GitAuth) => Promise<SyncResult>

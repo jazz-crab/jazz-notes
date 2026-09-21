@@ -12,6 +12,7 @@ import {
 import {
   loadSettings as coreLoadSettings,
   saveSettings as coreSaveSettings,
+  settingsExist as coreSettingsExist,
   type Settings,
 } from './settings'
 import {
@@ -141,6 +142,10 @@ export function loadSettings(vault: string): Promise<Settings> {
 
 export function saveSettings(vault: string, patch: Partial<Settings>): Promise<Settings> {
   return coreSaveSettings(vault, patch)
+}
+
+export function settingsExist(vault: string): boolean {
+  return coreSettingsExist(vault)
 }
 
 export function gitEnsure(vault: string, remoteUrl: string): Promise<string> {

@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { SyncResult, GitCommitInfo, GitAuth } from '../shared/types'
 import type { NoteDraft, SavedNoteInfo } from '../shared/note'
+import type { Settings } from '../shared/settings'
 
 const api = {
   getPath: (): Promise<string> => ipcRenderer.invoke('notes:getPath'),
@@ -35,6 +36,11 @@ const api = {
     ipcRenderer.invoke('history:read'),
   writeHistory: (data: unknown): Promise<boolean> =>
     ipcRenderer.invoke('history:write', data),
+
+  readSettings: (dirPath?: string): Promise<{ settings: Settings; exists: boolean }> =>
+    ipcRenderer.invoke('settings:read', dirPath),
+  writeSettings: (dirPath: string | undefined, patch: Partial<Settings>): Promise<Settings> =>
+    ipcRenderer.invoke('settings:write', dirPath, patch),
 
   gitEnsure: (repoDir: string, remoteUrl: string): Promise<boolean> =>
     ipcRenderer.invoke('git:ensure', repoDir, remoteUrl),

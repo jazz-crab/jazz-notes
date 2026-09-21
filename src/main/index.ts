@@ -4,6 +4,7 @@ import { readFile, writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { watch } from 'chokidar'
 import * as svc from '../shared/service'
+import type { Settings } from '../shared/settings'
 import { getIndexStore } from './index-store'
 
 let mainWindow: BrowserWindow | null = null
@@ -177,6 +178,16 @@ function registerIpc() {
     const historyPath = join(app.getPath('userData'), 'jazz-notes-history.json')
     await writeFile(historyPath, JSON.stringify(data), 'utf-8')
     return true
+  })
+
+  ipcMain.handle('settings:read', async (_event, dirPath?: string) => {
+    const vault = dirPath || getDefaultNotesPath()
+    return { settings: await svc.loadSettings(vault), exists: svc.settingsExist(vault) }
+  })
+
+  ipcMain.handle('settings:write', async (_event, dirPath: string | undefined, patch: Partial<Settings>) => {
+    const vault = dirPath || getDefaultNotesPath()
+    return svc.saveSettings(vault, patch)
   })
 
   ipcMain.handle('dialog:selectDirectory', async () => {

@@ -1,6 +1,7 @@
 import type { JazzAPI } from '../preload/index.d'
 import type { GitAuth, GitCommitInfo, SyncResult } from '../shared/types'
 import type { NoteDraft, SavedNoteInfo } from '../shared/note'
+import type { Settings } from '../shared/settings'
 
 interface ApiResponse {
   path?: string
@@ -135,6 +136,15 @@ export function installWebJazz() {
     writeHistory: async (data: unknown) => {
       await call('/history', jsonInit({ data }))
       return true
+    },
+
+    readSettings: async (): Promise<{ settings: Settings; exists: boolean }> => {
+      const { settings, exists } = await call<{ settings: Settings; exists?: boolean }>('/settings')
+      return { settings: settings || null, exists: !!exists }
+    },
+    writeSettings: async (_dirPath: string | undefined, patch: Partial<Settings>): Promise<Settings> => {
+      const { settings } = await call<{ settings: Settings }>('/settings', jsonInit({ patch }))
+      return settings
     },
 
     gitEnsure: async (_repoDir: string, remoteUrl: string) => {
