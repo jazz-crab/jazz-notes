@@ -46,7 +46,7 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
   const [showHistory, setShowHistory] = useState(false)
   const isMobile = useIsMobile()
   const [editing, setEditing] = useState(initialEditing)
-const titleRef = useRef<HTMLInputElement>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
   const tapTargetRef = useRef<{ clientX: number; clientY: number } | null>(null)
 
   useEffect(() => {
@@ -222,7 +222,7 @@ const titleRef = useRef<HTMLInputElement>(null)
           onChange={handleChange}
           onSave={handleSave}
           editing={editing}
-onShiftTabFromStart={() => {
+          onShiftTabFromStart={() => {
             setTimeout(() => titleRef.current?.focus(), 0)
           }}
           tapTargetRef={tapTargetRef}
