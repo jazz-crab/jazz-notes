@@ -125,7 +125,7 @@ updated: "2026-08-06T00:00:00.000Z"
 
 Поддерживаемые ключи frontmatter: `title`, `id`, `priority` (0–4), `due`, `color`, `created`, `updated`, `tags`. Парсер обрабатывает значения в кавычках с экранированием, скалярные значения без кавычек и строки `---` внутри текста.
 
-Настройки приложения (палитра, тема, язык, шрифт, масштаб интерфейса, путь к хранилищу) хранятся в `localStorage` под ключом `jazz-settings`.
+Настройки приложения (палитра, тема, язык, шрифт, масштаб интерфейса, путь к хранилищу, sync-доступ) хранятся в `<vault>/.jazz/settings.json` — файле внутри хранилища, исключённом из git, поэтому они следуют за хранилищем между устройствами, но не попадают в git-историю. Читать и менять их можно из десктопного UI, веб-UI и CLI (команда `settings`).
 
 ## Веб-версия (браузер)
 
@@ -240,6 +240,9 @@ node dist/cli.js list   # или запускай бандл напрямую
 | `mv <from> <to>` | Переименовать / переместить внутри хранилища |
 | `meta <rel> [--title <t>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>] [--done] [--undone]` | Обновить метаданные заметки, тело сохраняется |
 | `search <query> [--limit <n>]` | Полнотекстовый поиск по всем заметкам |
+| `settings` | Показать все настройки в JSON (хранятся в `<vault>/.jazz/settings.json`, в gitignore) |
+| `settings get <key>` | Вывести значение одной настройки |
+| `settings set <key> <value> [--user <u>] [--password <p>]` | Установить настройку (string/boolean/number); `--user`/`--password` также задают sync-доступ |
 | `git commit [--message <m>]` | Закоммитить изменения (по умолчанию `autosave`) |
 | `git remote [--url <u>]` | Показать или установить git remote origin |
 | `git status` | Показать статус git-репозитория |
@@ -265,6 +268,8 @@ node dist/cli.js list
 node dist/cli.js folders
 node dist/cli.js create "Быстрая заметка" --text "тело" --folder inbox --due 2026-08-15 --color red --priority 2 --tags работа,jazz
 node dist/cli.js write 00002.md --content "# Заголовок\nТекст"
+node dist/cli.js settings set uiZoom 1.2
+node dist/cli.js settings set syncRemote https://example.com/repo.git --user alice --password secret
 node dist/cli.js git commit --message "wip"
 node dist/cli.js git conflicts
 node dist/cli.js git resolve 00002.md --local

@@ -126,7 +126,7 @@ Body text…
 
 Supported frontmatter keys: `title`, `id`, `priority` (0–4), `due`, `color`, `created`, `updated`, `tags`. The parser handles quoted values with escaping, unquoted scalars, and `---` lines inside the body.
 
-App preferences (palette, theme, language, font, UI zoom, notes vault path) are persisted in `localStorage` under `jazz-settings`.
+App preferences (palette, theme, language, font, UI zoom, notes vault path, sync credentials) are persisted in `<vault>/.jazz/settings.json` — a gitignored file inside the vault, so they follow the vault across devices but never leak into git history. Readable and writable from the desktop UI, the web UI, and the CLI (`settings` command).
 
 ## Web (browser) version
 
@@ -241,6 +241,9 @@ node dist/cli.js list   # or invoke the bundle directly
 | `mv <from> <to>` | Rename / move within the vault |
 | `meta <rel> [--title <t>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>] [--done] [--undone]` | Update note metadata, preserves body |
 | `search <query> [--limit <n>]` | Full-text search over all notes |
+| `settings` | Show all settings as JSON (stored in `<vault>/.jazz/settings.json`, gitignored) |
+| `settings get <key>` | Print one setting value |
+| `settings set <key> <value> [--user <u>] [--password <p>]` | Set a setting (string/boolean/number); `--user`/`--password` also set sync credentials |
 | `git commit [--message <m>]` | Commit changes (default message `autosave`) |
 | `git remote [--url <u>]` | Show or set git remote origin |
 | `git status` | Show git repository status |
@@ -266,6 +269,8 @@ node dist/cli.js list
 node dist/cli.js folders
 node dist/cli.js create "Quick note" --text "body" --folder inbox --due 2026-08-15 --color red --priority 2 --tags work,jazz
 node dist/cli.js write 00002.md --content "# Title\nBody"
+node dist/cli.js settings set uiZoom 1.2
+node dist/cli.js settings set syncRemote https://example.com/repo.git --user alice --password secret
 node dist/cli.js git commit --message "wip"
 node dist/cli.js git conflicts
 node dist/cli.js git resolve 00002.md --local
