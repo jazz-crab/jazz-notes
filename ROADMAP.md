@@ -30,7 +30,7 @@ Legend: `[x] done · [ ] next · [~] deferred`
 - [x] **Tests + CI** — unit tests for the frontmatter parser, i18n, color, debounce, and fonts utilities (Vitest); a GitHub Actions workflow runs tests and the build on every push/PR.
 - [x] **Packaging + beta releases** — Linux (AppImage/deb/pacman) + Windows (NSIS); GitHub Actions builds and publishes releases with ready-to-download binaries on every `v*` tag.
 - [x] **Console-first CLI** — every core operation reachable from the terminal (`list/read/write/create/delete/mkdir/rmdir/mv/git*`), sharing the same typed core (`src/shared/service.ts`) as the Electron IPC and the web server. Tracks issue #7.
-- [ ] **Full UI↔CLI parity** — EVERYTHING doable in the UI must be doable from the terminal with no UI running (rename / meta changes / move / search / folders / settings / sync + server-side git-users via CLI). So `node jazz-notes add-note "..."` creates a note, bindable to a hotkey / cron / integration. See issue #7.
+- [x] **Full UI↔CLI parity** — EVERYTHING doable in the UI is doable from the terminal with no UI running (rename / meta changes / move / search / folders / settings / sync + server-side git-users via CLI), sharing the same `<vault>/.jazz/settings.json` file. So `node jazz-notes add-note "..."` creates a note, bindable to a hotkey / cron / integration. Tracks issue #7.
 - [ ] **Standalone native binary** — build a self-contained executable from the same core (Bun `--compile` / electron-builder) that works without Node.js and without any UI, incl. a Windows `.exe`. Install and drive fully from the terminal. See issue #7.
 
 ### Sync & versioning

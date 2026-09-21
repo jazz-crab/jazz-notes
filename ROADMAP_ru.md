@@ -30,7 +30,7 @@
 - [x] **Тесты + CI** — unit-тесты парсера frontmatter, i18n, color, debounce и шрифтов (Vitest); GitHub Actions workflow запускает тесты и сборку на каждый push/PR.
 - [x] **Упаковка и бета-релизы** — Linux (AppImage/deb/pacman) + Windows (NSIS); GitHub Actions по тегу `v*` собирает и публикует релизы с готовыми бинарниками для скачивания.
 - [x] **Console-first CLI** — любая ключевая операция доступна из терминала (`list/read/write/create/delete/mkdir/rmdir/mv/git*`), поверх того же типизированного ядра (`src/shared/service.ts`), что и Electron IPC и веб-сервер. См. issue #7.
-- [ ] **Полный UI↔CLI паритет** — ВСЁ, что можно сделать в UI, должно быть доступно из терминала без запуска UI (rename/смена метаданных/move/search/папки/настройки/sync + серверный git-users через CLI). Чтобы `node jazz-notes add-note "..."` создавал заметку, которую можно повесить на хоткей/cron/integration. См. issue #7.
+- [x] **Полный UI↔CLI паритет** — ВСЁ, что можно сделать в UI, доступно из терминала без запуска UI (rename/смена метаданных/move/search/папки/настройки/sync + серверный git-users через CLI), поверх общего файла `<vault>/.jazz/settings.json`. Чтобы `node jazz-notes add-note "..."` создавал заметку, которую можно повесить на хоткей/cron/integration. См. issue #7.
 - [ ] **Автономный нативный бинарник** — сборка standalone-exe из того же ядра (Bun `--compile` / electron-builder), работа без Node.js и без UI, в т.ч. `.exe` для Windows. Установка и использование целиком из терминала. См. issue #7.
 
 ### Синхронизация и версии
