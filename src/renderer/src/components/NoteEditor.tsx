@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback, useEffect } from 'react'
+import { useRef, useMemo, useCallback, useEffect, type MutableRefObject } from 'react'
 import { AtomicCodeMirrorEditor } from '@atomic-editor/editor'
 import { Prec } from '@codemirror/state'
 import { keymap, EditorView } from '@codemirror/view'
@@ -26,9 +26,10 @@ interface Props {
   onSave: () => void
   editing?: boolean
   onShiftTabFromStart?: () => void
+  tapTargetRef?: MutableRefObject<{ clientX: number; clientY: number } | null>
 }
 
-export default function NoteEditor({ documentId, value, onChange, onSave, editing = false, onShiftTabFromStart }: Props) {
+export default function NoteEditor({ documentId, value, onChange, onSave, editing = false, onShiftTabFromStart, tapTargetRef }: Props) {
   const handleRef = useRef<AtomicCodeMirrorEditorHandle | null>(null)
   const onChangeRef = useRef(onChange)
   const onSaveRef = useRef(onSave)
@@ -95,8 +96,25 @@ export default function NoteEditor({ documentId, value, onChange, onSave, editin
 
   useEffect(() => {
     clearToast()
-    if (editing) handleRef.current?.focus()
-  }, [documentId, editing, clearToast])
+    if (!editing) return
+    const tap = tapTargetRef?.current
+    if (tap) {
+      tapTargetRef.current = null
+      const view = getView()
+      if (view) {
+        const pos = view.posAtCoords({ x: tap.clientX, y: tap.clientY }, false)
+        if (pos != null) {
+          view.dispatch({
+            selection: { anchor: pos },
+            scrollIntoView: true,
+          })
+        }
+        view.focus()
+      }
+      return
+    }
+    handleRef.current?.focus()
+  }, [documentId, editing, clearToast, getView, tapTargetRef])
 
   const handleChange = useMemo(() => (md: string) => onChangeRef.current(md), [])
 
