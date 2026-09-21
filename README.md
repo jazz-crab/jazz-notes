@@ -17,6 +17,7 @@ Inspired by [Obsidian](https://obsidian.md): a plain-Markdown vault with inline 
 - **Code fence highlighting** — JS/TS, Python, Go, Rust, Ruby, Swift, Shell, TOML, Dockerfile, HTML, CSS, JSON, YAML, Markdown, Java, C/C++, PHP, SQL, XML
 - **Per-note undo/redo** — seeded from the git history (up to 500 versions) and extended live, so `Ctrl/Cmd+Z` can walk a note back to its very first saved state; step-counter toast
 - **Tap to edit on touch devices** — a note opens in reading mode; on phones/tablets a single tap on the content switches to editing **and** places the caret right where you tapped (desktop keeps the `e` shortcut)
+- **Resizable editor width** — drag the edge of the editor area to narrow/widen the reading column on desktop; the width is remembered across sessions
 - **Keyboard shortcuts** — `Ctrl/Cmd+S` save, `Ctrl/Cmd+Z` undo, `Shift+Ctrl/Cmd+Z` / `Ctrl/Cmd+Y` redo
 
 ### Notes

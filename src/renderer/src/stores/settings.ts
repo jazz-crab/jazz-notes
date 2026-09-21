@@ -10,9 +10,17 @@ export const UI_ZOOM_MIN = 0.75
 export const UI_ZOOM_MAX = 2
 export const UI_ZOOM_STEP = 0.1
 
+export const EDITOR_WIDTH_MIN = 320
+export const EDITOR_WIDTH_MAX = 1800
+
 export function clampUiZoom(v: number): number {
   if (!Number.isFinite(v)) return 1
   return Math.min(UI_ZOOM_MAX, Math.max(UI_ZOOM_MIN, v))
+}
+
+export function clampEditorWidth(v: number): number {
+  if (!Number.isFinite(v)) return EDITOR_WIDTH_MAX
+  return Math.min(EDITOR_WIDTH_MAX, Math.max(EDITOR_WIDTH_MIN, v))
 }
 
 interface SettingsState {
@@ -22,6 +30,7 @@ interface SettingsState {
   lang: Lang
   font: FontId
   uiZoom: number
+  editorWidth: number | null
   notesPath: string
   showCountdown: boolean
   showDone: boolean
@@ -37,6 +46,7 @@ interface SettingsState {
   setLang: (lang: Lang) => void
   setFont: (font: FontId) => void
   setUiZoom: (v: number) => void
+  setEditorWidth: (v: number | null) => void
   setNotesPath: (path: string) => void
   setShowCountdown: (show: boolean) => void
   setShowDone: (show: boolean) => void
@@ -55,6 +65,7 @@ export const useSettingsStore = create<SettingsState>()(
       lang: 'ru',
       font: 'neon',
       uiZoom: 1,
+      editorWidth: null,
       notesPath: '',
       showCountdown: true,
       showDone: false,
@@ -70,6 +81,8 @@ export const useSettingsStore = create<SettingsState>()(
       setLang: (lang) => set({ lang }),
       setFont: (font) => set({ font }),
       setUiZoom: (uiZoom) => set({ uiZoom: clampUiZoom(uiZoom) }),
+      setEditorWidth: (editorWidth) =>
+        set({ editorWidth: editorWidth == null ? null : clampEditorWidth(editorWidth) }),
       setNotesPath: (notesPath) => set({ notesPath }),
       setShowCountdown: (showCountdown) => set({ showCountdown }),
       setShowDone: (showDone) => set({ showDone }),
@@ -86,6 +99,7 @@ export const useSettingsStore = create<SettingsState>()(
         lang: s.lang,
         font: s.font,
         uiZoom: s.uiZoom,
+        editorWidth: s.editorWidth,
         notesPath: s.notesPath,
         showCountdown: s.showCountdown,
         showDone: s.showDone,

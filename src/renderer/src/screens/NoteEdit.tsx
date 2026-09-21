@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNotesStore } from '../stores/notes'
-import { useSettingsStore } from '../stores/settings'
+import { useSettingsStore, clampEditorWidth } from '../stores/settings'
 import { useColors, useNoteColors } from '../theme'
 import type { NoteMeta } from '../utils/frontmatter'
 import { mixHex } from '../utils/color'
@@ -29,6 +29,8 @@ const RU_TO_LATIN_EDIT: Record<string, string> = { 'р': 'h', 'у': 'e', 'й': '
 export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing = false }: Props) {
   const colors = useColors()
   const lang = useSettingsStore((s) => s.lang)
+  const editorWidth = useSettingsStore((s) => s.editorWidth)
+  const setEditorWidth = useSettingsStore((s) => s.setEditorWidth)
   const noteColorMap = useNoteColors()
   const currentNote = useNotesStore((s) => s.currentNote)
   const lastListOrder = useNotesStore((s) => s.lastListOrder)
@@ -48,6 +50,12 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
   const [editing, setEditing] = useState(initialEditing)
   const titleRef = useRef<HTMLInputElement>(null)
   const tapTargetRef = useRef<{ clientX: number; clientY: number } | null>(null)
+  const editorWrapRef = useRef<HTMLDivElement>(null)
+  const editorBoxRef = useRef<HTMLDivElement>(null)
+  const rightHandleRef = useRef<HTMLDivElement>(null)
+  const [resizeHover, setResizeHover] = useState<'left' | 'right' | null>(null)
+  const [resizeEdge, setResizeEdge] = useState<'left' | 'right' | null>(null)
+  const resizeDragRef = useRef<{ edge: 'left' | 'right'; left: number; right: number; maxWidth: number; width: number } | null>(null)
 
   useEffect(() => {
     setCurrentNote(relPath)
@@ -55,6 +63,13 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
       setCurrentNote(null)
     }
   }, [relPath, setCurrentNote])
+
+  useEffect(() => {
+    return () => {
+      resizeDragRef.current = null
+      document.body.style.cursor = ''
+    }
+  }, [])
 
   const handleBack = useCallback(() => {
     if (isDirty) void performSaveRef.current()
@@ -147,6 +162,57 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
     updateNoteMeta(newMeta)
   }, [updateNoteMeta])
 
+  const applyResizeWidth = useCallback((w: number) => {
+    const box = editorBoxRef.current
+    const handle = rightHandleRef.current
+    if (box) {
+      box.style.flex = 'none'
+      box.style.width = `${w}px`
+    }
+    if (handle) handle.style.left = `${w}px`
+    const drag = resizeDragRef.current
+    if (drag) drag.width = w
+  }, [])
+
+  const handleResizeStart = useCallback((edge: 'left' | 'right') => (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const wrap = editorWrapRef.current
+    const box = editorBoxRef.current
+    if (!wrap || !box) return
+    const wrapRect = wrap.getBoundingClientRect()
+    const boxRect = box.getBoundingClientRect()
+    resizeDragRef.current = {
+      edge,
+      left: boxRect.left,
+      right: boxRect.right,
+      maxWidth: wrapRect.width,
+      width: boxRect.width,
+    }
+    setResizeEdge(edge)
+    document.body.style.cursor = 'col-resize'
+    let moved = false
+    const onMove = (ev: MouseEvent) => {
+      const drag = resizeDragRef.current
+      if (!drag) return
+      moved = true
+      const raw = drag.edge === 'right' ? ev.clientX - drag.left : drag.right - ev.clientX
+      const w = Math.min(clampEditorWidth(raw), drag.maxWidth)
+      applyResizeWidth(w)
+    }
+    const onUp = () => {
+      const drag = resizeDragRef.current
+      if (drag && moved) setEditorWidth(drag.width)
+      resizeDragRef.current = null
+      setResizeEdge(null)
+      document.body.style.cursor = ''
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [applyResizeWidth, setEditorWidth])
+
   if (!currentNote) {
     return (
       <div style={styles.loading}>
@@ -202,8 +268,10 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
       <UndoToast />
 
       <div
+        ref={editorWrapRef}
         style={{
           ...styles.editorWrap,
+          position: 'relative',
           ...(editorTint ? { '--atomic-editor-bg': editorTint } as any : {}),
           ...(editorText ? { '--atomic-editor-fg': editorText } as any : {}),
         }}
@@ -216,17 +284,40 @@ export default function NoteEdit({ relPath, onBack, onOpenNote, initialEditing =
           }
         }}
       >
-        <NoteEditor
-          documentId={currentNote.relPath}
-          value={currentNote.body}
-          onChange={handleChange}
-          onSave={handleSave}
-          editing={editing}
-          onShiftTabFromStart={() => {
-            setTimeout(() => titleRef.current?.focus(), 0)
-          }}
-          tapTargetRef={tapTargetRef}
-        />
+        {!isMobile && (
+          <div
+            style={resizeHandleStyle(colors, 'left')}
+            onMouseDown={handleResizeStart('left')}
+            onMouseEnter={() => setResizeHover('left')}
+            onMouseLeave={() => setResizeHover(null)}
+          >
+            <div style={resizeHandleLineStyle(colors, 'left', resizeHover === 'left' || resizeEdge === 'left')} />
+          </div>
+        )}
+        <div ref={editorBoxRef} style={editorBoxStyle(editorWidth)}>
+          <NoteEditor
+            documentId={currentNote.relPath}
+            value={currentNote.body}
+            onChange={handleChange}
+            onSave={handleSave}
+            editing={editing}
+            onShiftTabFromStart={() => {
+              setTimeout(() => titleRef.current?.focus(), 0)
+            }}
+            tapTargetRef={tapTargetRef}
+          />
+        </div>
+        {!isMobile && (
+          <div
+            ref={rightHandleRef}
+            style={resizeHandleStyle(colors, 'right', editorWidth)}
+            onMouseDown={handleResizeStart('right')}
+            onMouseEnter={() => setResizeHover('right')}
+            onMouseLeave={() => setResizeHover(null)}
+          >
+            <div style={resizeHandleLineStyle(colors, 'right', resizeHover === 'right' || resizeEdge === 'right')} />
+          </div>
+        )}
       </div>
 
       <button
@@ -398,4 +489,46 @@ const dateTextStyle = (c: any, overdue: boolean) => ({
   whiteSpace: 'nowrap' as const,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+})
+
+const editorBoxStyle = (w: number | null): React.CSSProperties =>
+  w != null
+    ? {
+        flex: '0 0 auto',
+        width: `${w}px`,
+        maxWidth: '100%',
+        height: '100%',
+        display: 'flex',
+      }
+    : {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+      }
+
+const resizeHandleStyle = (c: any, side: 'left' | 'right', width?: number | null): React.CSSProperties => {
+  const base: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 8,
+    cursor: 'col-resize',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    zIndex: 4,
+  }
+  if (side === 'left') base.left = 0
+  else if (width != null) base.left = width
+  else base.right = 0
+  return base
+}
+
+const resizeHandleLineStyle = (c: any, side: 'left' | 'right', active: boolean): React.CSSProperties => ({
+  position: 'absolute',
+  top: 0,
+  bottom: 0,
+  width: 2,
+  [side === 'left' ? 'right' : 'left']: 0,
+  background: active ? c.blue : c.border,
 })
