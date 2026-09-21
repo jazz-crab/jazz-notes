@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { NoteMeta, NoteDraft } from '../utils/frontmatter'
 import { parseNote, serializeNote } from '../utils/frontmatter'
 import { useSettingsStore } from './settings'
@@ -58,7 +59,7 @@ export type SidebarSelection =
   | { type: 'nodate' }
   | { type: 'folder'; path: string }
 
-export type SortBy = 'date' | 'due'
+export type SortBy = 'date' | 'due' | 'manual'
 
 interface NotesState {
   notes: Note[]
@@ -75,6 +76,7 @@ interface NotesState {
   dirtyNotes: Set<string>
   vaultExists: boolean
   lastListOrder: string[]
+  manualOrder: string[]
 
   setNotesPath: (path: string) => void
   loadNotes: () => Promise<void>
@@ -90,6 +92,7 @@ interface NotesState {
   updateNoteMetaByPath: (relPath: string, patch: Partial<NoteMeta>) => Promise<void>
   setSidebarSelection: (sel: SidebarSelection) => void
   setLastListOrder: (order: string[]) => void
+  setManualOrder: (order: string[]) => void
   setSearchQuery: (q: string) => void
   runSearch: (query: string) => Promise<void>
   setSortBy: (s: SortBy) => void
@@ -100,7 +103,9 @@ interface NotesState {
   deleteFolder: (folder: string) => Promise<void>
 }
 
-export const useNotesStore = create<NotesState>((set, get) => ({
+export const useNotesStore = create<NotesState>()(
+  persist(
+    (set, get) => ({
   notes: [],
   folders: [],
   currentNote: null,
@@ -115,6 +120,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   dirtyNotes: new Set(),
   vaultExists: true,
   lastListOrder: [],
+  manualOrder: [],
 
   setNotesPath: (path: string) => set({ notesPath: path }),
 
@@ -373,6 +379,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   setSidebarSelection: (sel) => set({ sidebarSelection: sel }),
   setLastListOrder: (order) => set({ lastListOrder: order }),
+  setManualOrder: (order) => set({ manualOrder: order }),
   setSearchQuery: (q) => {
     set({ searchQuery: q })
     void get().runSearch(q)
@@ -510,7 +517,13 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       .catch(() => get().loadNotes())
       .catch(() => {})
   },
-}))
+    }),
+    {
+      name: 'jazz-notes-store',
+      partialize: (s) => ({ manualOrder: s.manualOrder }),
+    }
+  )
+)
 
 const debouncedReload = debounce(() => {
   void useNotesStore.getState().loadNotes()

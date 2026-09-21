@@ -19,7 +19,7 @@ import PromptDialog from '../components/PromptDialog'
 import DatePicker from '../components/DatePicker'
 import ColorPicker from '../components/ColorPicker'
 import NoteCreateDialog from '../components/NoteCreateDialog'
-import { DndContext, useDraggable, useSensors, useSensor, PointerSensor, TouchSensor } from '@dnd-kit/core'
+import { DndContext, useDraggable, useDroppable, useSensors, useSensor, PointerSensor, TouchSensor } from '@dnd-kit/core'
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type React from 'react'
@@ -45,7 +45,9 @@ interface NoteItemProps {
 }
 
 function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onHover, onContextMenu, onDeleteConfirmed }: NoteItemProps) {
+  const colors = useColors()
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: note.relPath })
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: note.relPath })
   const confirmedRef = useRef(false)
 
   useEffect(() => {
@@ -63,9 +65,14 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onHover, o
     )
   }
 
+  const setRefs = (el: HTMLDivElement | null) => {
+    setNodeRef(el)
+    setDropRef(el)
+  }
+
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       {...attributes}
       {...listeners}
       {...(isActive ? { 'data-active': 'true' } : {})}
@@ -77,6 +84,9 @@ function NoteItem({ note, isDeleting, isActive, isLastOpened, onOpen, onHover, o
         width: 'calc(100% - 10px)',
         marginLeft: isActive ? 0 : 'auto',
         marginRight: isActive ? 10 : 0,
+        outline: isOver ? `1.5px dashed ${colors.blue}` : undefined,
+        outlineOffset: -2,
+        borderRadius: 6,
       }}
     >
       <NoteCard note={note} isActive={isActive} isLastOpened={isLastOpened} onClick={onOpen} onContextMenu={onContextMenu} />
@@ -103,6 +113,9 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const setSearchQuery = useNotesStore((s) => s.setSearchQuery)
   const setSortBy = useNotesStore((s) => s.setSortBy)
   const setLastListOrder = useNotesStore((s) => s.setLastListOrder)
+  const manualOrder = useNotesStore((s) => s.manualOrder)
+  const setManualOrder = useNotesStore((s) => s.setManualOrder)
+  const lastListOrder = useNotesStore((s) => s.lastListOrder)
   const deleteNote = useNotesStore((s) => s.deleteNote)
   const renameNote = useNotesStore((s) => s.renameNote)
   const moveNote = useNotesStore((s) => s.moveNote)
@@ -123,6 +136,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const searchRef = useRef<HTMLInputElement>(null)
   const lastGTime = useRef(0)
   const lastKeyNav = useRef(0)
+  const lastOrderRef = useRef<string[] | null>(null)
   const isMobile = useIsMobile()
 
   const showCalendar = view === 'kanban' && !searchQuery && (sidebarSelection.type === 'all' || sidebarSelection.type === 'folder')
@@ -136,7 +150,20 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
     const over = e.over
     if (!over) return
     const relPath = String(e.active.id)
-    const folder = over.id === 'root' ? null : String(over.id)
+    const overId = String(over.id)
+    const targetIndex = filtered.findIndex((n) => n.relPath === overId)
+    if (targetIndex >= 0) {
+      const fromIndex = filtered.findIndex((n) => n.relPath === relPath)
+      if (fromIndex >= 0 && fromIndex !== targetIndex) {
+        const next = [...filtered]
+        const [moved] = next.splice(fromIndex, 1)
+        next.splice(targetIndex, 0, moved)
+        setManualOrder(next.map((n) => n.relPath))
+        setSortBy('manual')
+      }
+      return
+    }
+    const folder = overId === 'root' ? null : overId
     void moveNote(relPath, folder)
   }
 
@@ -200,7 +227,22 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
       list = []
     }
 
-    if (sortBy === 'due') {
+    if (sortBy === 'manual') {
+      const order = manualOrder.length > 0 ? manualOrder : lastListOrder
+      const idx = new Map(order.map((p, i) => [p, i]))
+      list = [...list].sort((a, b) => {
+        const aPos = idx.get(a.relPath)
+        const bPos = idx.get(b.relPath)
+        if (aPos === undefined && bPos === undefined) {
+          const aT = a.meta.updated || a.meta.created || ''
+          const bT = b.meta.updated || b.meta.created || ''
+          return bT.localeCompare(aT)
+        }
+        if (aPos === undefined) return 1
+        if (bPos === undefined) return -1
+        return aPos - bPos
+      })
+    } else if (sortBy === 'due') {
       list = [...list].sort((a, b) => {
         if (!a.meta.due && !b.meta.due) return 0
         if (!a.meta.due) return 1
@@ -215,7 +257,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
       })
     }
     return list
-  }, [notes, sidebarSelection.type, sidebarSelection.type === 'folder' ? sidebarSelection.path : undefined, searchQuery, searchResults, showDone, sortBy])
+  }, [notes, sidebarSelection.type, sidebarSelection.type === 'folder' ? sidebarSelection.path : undefined, searchQuery, searchResults, showDone, sortBy, manualOrder, lastListOrder])
 
   useEffect(() => {
     void useSyncStore.getState().startup()
@@ -331,7 +373,12 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   }, [filtered.length])
 
   useEffect(() => {
-    setLastListOrder(filtered.map((n) => n.relPath))
+    const order = filtered.map((n) => n.relPath)
+    const prev = lastOrderRef.current
+    if (!prev || prev.length !== order.length || prev.some((p, i) => p !== order[i])) {
+      lastOrderRef.current = order
+      setLastListOrder(order)
+    }
   }, [filtered, setLastListOrder])
 
   const openMenu = (note: Note, x: number, y: number) => {
@@ -343,6 +390,7 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
   const sortOptions: Array<{ value: SortBy; label: string }> = [
     { value: 'date', label: t('sort.by.date', lang) },
     { value: 'due', label: t('sort.by.due', lang) },
+    { value: 'manual', label: t('sort.by.manual', lang) },
   ]
 
   return (
@@ -396,18 +444,17 @@ export default function NoteList({ isVisible, onSelectNote }: Props) {
             </div>
           </div>
           <div style={sortRowStyle}>
-            {sortOptions.map((opt) => (
-              <button
-                key={opt.value}
-                style={{
-                  ...sortBtnStyle(colors),
-                  ...(sortBy === opt.value ? sortBtnActiveStyle(colors) : {}),
-                }}
-                onClick={() => setSortBy(opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
+            <select
+              style={sortSelectStyle(colors)}
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+            >
+              {sortOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
           <SyncIndicator />
         </div>
@@ -655,7 +702,8 @@ const sortRowStyle: React.CSSProperties = {
 }
 const listStyle: React.CSSProperties = {
   flex: 1,
-  overflow: 'auto',
+  overflowY: 'auto',
+  overflowX: 'hidden',
   padding: '8px 20px',
   display: 'flex',
   flexDirection: 'column',
@@ -678,16 +726,14 @@ const clearBtnStyle = (c: any) => ({
   color: c.comment,
   fontSize: 16,
 })
-const sortBtnStyle = (c: any) => ({
-  padding: '4px 10px',
+const sortSelectStyle = (c: any): React.CSSProperties => ({
+  padding: '4px 8px',
   fontSize: 11,
-  color: c.comment,
+  color: c.fg,
+  background: c.bgAlt,
+  border: `1px solid ${c.border}`,
   borderRadius: 4,
-})
-const sortBtnActiveStyle = (c: any) => ({
-  background: c.bgHighlight,
-  color: c.blue,
-  fontWeight: 600,
+  cursor: 'pointer',
 })
 const loadingStyle = (c: any) => ({
   color: c.comment,
