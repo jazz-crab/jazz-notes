@@ -231,6 +231,7 @@ node dist/cli.js list   # or invoke the bundle directly
 |---------|-------------|
 | `path` | Print the vault path |
 | `list` | List notes as `relPath<TAB>title` |
+| `folders` | List folder paths (relative) |
 | `read <rel>` | Print a note's raw content |
 | `write <rel> [--content <t>]` | Write raw content; reads stdin if `--content` is omitted |
 | `create <title> [--text <t>] [--folder <f>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>]` | Create a note; prints its relative path |
@@ -244,6 +245,8 @@ node dist/cli.js list   # or invoke the bundle directly
 | `git remote [--url <u>]` | Show or set git remote origin |
 | `git status` | Show git repository status |
 | `git sync [--user <u>] [--password <p>]` | Push / pull against the configured remote |
+| `git conflicts` | List files with unresolved merge conflicts |
+| `git resolve <rel> (--local\|--remote) [--user <u>] [--password <p>]` | Resolve a conflicted file, picking the local or remote version |
 | `git history [--rel <rel>] [--limit <n>]` | Show git history |
 | `git show <rel> <hash>` | Show a file at a given commit |
 | `git restore <rel> <hash>` | Restore a file version (new commit) |
@@ -260,9 +263,12 @@ Examples:
 ```bash
 node dist/cli.js path
 node dist/cli.js list
+node dist/cli.js folders
 node dist/cli.js create "Quick note" --text "body" --folder inbox --due 2026-08-15 --color red --priority 2 --tags work,jazz
 node dist/cli.js write 00002.md --content "# Title\nBody"
 node dist/cli.js git commit --message "wip"
+node dist/cli.js git conflicts
+node dist/cli.js git resolve 00002.md --local
 ```
 
 `JAZZ_VAULT` is required: without it the CLI prints an error to stderr and exits with code 1. Pass an absolute path (Node does not expand `~`). Like the web server, the CLI does not auto-create the vault. A standalone compiled binary for the CLI is planned (issue #37).

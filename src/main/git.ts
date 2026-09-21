@@ -393,6 +393,24 @@ export async function getStatusSummary(repoDir: string): Promise<StatusSummary> 
   return { remote, branch, lastCommit, uncommitted }
 }
 
+export async function listConflicts(repoDir: string): Promise<string[]> {
+  const status = await git.statusMatrix({ fs, dir: repoDir }).catch(() => [])
+  const conflicts: string[] = []
+  for (const [filepath, head, workdir, stage] of status) {
+    if (stage !== 3 && head === workdir) continue
+    let content = ''
+    try {
+      content = await readFile(join(repoDir, filepath), 'utf-8')
+    } catch {
+      continue
+    }
+    if (content.includes('<<<<<<<') && content.includes('=======') && content.includes('>>>>>>>')) {
+      conflicts.push(filepath)
+    }
+  }
+  return conflicts.sort()
+}
+
 export async function restore(repoDir: string, relPath: string, hash: string): Promise<string | null> {
   const content = await show(repoDir, relPath, hash)
   if (content === null) return null

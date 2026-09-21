@@ -11,6 +11,7 @@ function usage(): string {
     `Commands:`,
     `  path                          print vault path`,
     `  list                          list notes as relPath<TAB>title`,
+    `  folders                       list folders (relative paths)`,
     `  read <rel>                    print raw note content`,
     `  write <rel> [--content <t>]   write raw content (stdin if no --content)`,
     `  create <title> [--text <t>] [--folder <f>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>]`,
@@ -25,6 +26,8 @@ function usage(): string {
     `  git remote [--url <u>]        show or set git remote origin`,
     `  git status                    show git repository status`,
     `  git sync [--user <u>] [--password <p>]`,
+    `  git conflicts                list files with unresolved conflicts`,
+    `  git resolve <file> (--local|--remote) [--user <u>] [--password <p>]`,
     `  git history [--rel <rel>] [--limit <n>]`,
     `  git show <rel> <hash>`,
     `  git restore <rel> <hash>`,
@@ -60,6 +63,14 @@ export async function run(args: string[]): Promise<void> {
       const notes = await svc.listNotes(VAULT)
       if (notes.length === 0) fail(`vault not found: ${VAULT}`)
       for (const n of notes) console.log(`${n.relPath}\t${n.title}`)
+      return
+    }
+
+    case 'folders': {
+      if (!svc.vaultExists(VAULT)) fail(`vault not found: ${VAULT}`)
+      const entries = await svc.readDirRecursive(VAULT)
+      const folders = entries.filter((e) => e.endsWith('/')).map((e) => e.slice(0, -1)).sort()
+      for (const f of folders) console.log(f)
       return
     }
 
@@ -287,7 +298,7 @@ export async function run(args: string[]): Promise<void> {
 
     case 'git': {
       const sub = rest[0]
-      if (!sub) fail('usage: git <remote|status|commit|sync|history|show|restore>')
+      if (!sub) fail('usage: git <remote|status|commit|sync|conflicts|resolve|history|show|restore>')
       await svc.gitEnsure(VAULT, '')
       if (sub === 'remote') {
         let url: string | undefined
@@ -346,6 +357,40 @@ export async function run(args: string[]): Promise<void> {
         }
         const result = await svc.gitSync(VAULT, user || password ? { username: user, password } : undefined)
         console.log(JSON.stringify(result))
+        return
+      }
+      if (sub === 'conflicts') {
+        const files = await svc.gitListConflicts(VAULT)
+        for (const f of files) console.log(f)
+        return
+      }
+      if (sub === 'resolve') {
+        const file = rest[1]
+        if (!file) fail('usage: git resolve <file> (--local|--remote) [--user <u>] [--password <p>]')
+        let source: 'local' | 'remote' | undefined
+        let user: string | undefined
+        let password: string | undefined
+        for (let i = 2; i < rest.length; i++) {
+          if (rest[i] === '--local') {
+            source = 'local'
+          } else if (rest[i] === '--remote') {
+            source = 'remote'
+          } else if (rest[i] === '--user' && rest[i + 1]) {
+            user = rest[i + 1]
+            i++
+          } else if (rest[i] === '--password' && rest[i + 1]) {
+            password = rest[i + 1]
+            i++
+          }
+        }
+        if (!source) fail('usage: git resolve <file> (--local|--remote) [--user <u>] [--password <p>]')
+        const result = await svc.gitResolveConflicts(
+          VAULT,
+          [{ file, source }],
+          user || password ? { username: user, password } : undefined
+        )
+        if (result.status === 'synced') console.log('resolved')
+        else console.log(JSON.stringify(result))
         return
       }
       if (sub === 'history') {

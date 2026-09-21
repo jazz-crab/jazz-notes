@@ -24,6 +24,7 @@ import {
   restore,
   getRemoteUrl,
   getStatusSummary,
+  listConflicts,
   type StatusSummary,
 } from '../main/git'
 
@@ -166,4 +167,8 @@ export function gitRemote(vault: string): Promise<string | null> {
 
 export function gitStatusSummary(vault: string): Promise<StatusSummary> {
   return getStatusSummary(vault)
+}
+
+export function gitListConflicts(vault: string): Promise<string[]> {
+  return listConflicts(vault)
 }

@@ -230,6 +230,7 @@ node dist/cli.js list   # или запускай бандл напрямую
 |---------|----------|
 | `path` | Вывести путь к хранилищу |
 | `list` | Список заметок как `relPath<TAB>title` |
+| `folders` | Список папок (относительные пути) |
 | `read <rel>` | Вывести сырой текст заметки |
 | `write <rel> [--content <t>]` | Записать сырой текст; если `--content` не указан — читает stdin |
 | `create <title> [--text <t>] [--folder <f>] [--due <d>] [--color <c>] [--priority <0-4>] [--tags <a,b>]` | Создать заметку; печатает её относительный путь |
@@ -243,6 +244,8 @@ node dist/cli.js list   # или запускай бандл напрямую
 | `git remote [--url <u>]` | Показать или установить git remote origin |
 | `git status` | Показать статус git-репозитория |
 | `git sync [--user <u>] [--password <p>]` | Push / pull против настроенного remote |
+| `git conflicts` | Список файлов с неразрешёнными merge-конфликтами |
+| `git resolve <rel> (--local\|--remote) [--user <u>] [--password <p>]` | Разрешить конфликтный файл, выбрав локальную или удалённую версию |
 | `git history [--rel <rel>] [--limit <n>]` | Показать git-историю |
 | `git show <rel> <hash>` | Показать файл в заданном коммите |
 | `git restore <rel> <hash>` | Восстановить версию файла (новый коммит) |
@@ -259,9 +262,12 @@ node dist/cli.js list   # или запускай бандл напрямую
 ```bash
 node dist/cli.js path
 node dist/cli.js list
+node dist/cli.js folders
 node dist/cli.js create "Быстрая заметка" --text "тело" --folder inbox --due 2026-08-15 --color red --priority 2 --tags работа,jazz
 node dist/cli.js write 00002.md --content "# Заголовок\nТекст"
 node dist/cli.js git commit --message "wip"
+node dist/cli.js git conflicts
+node dist/cli.js git resolve 00002.md --local
 ```
 
 `JAZZ_VAULT` обязателен: без него CLI печатает ошибку в stderr и завершается с кодом 1. Передавай абсолютный путь (Node не раскрывает `~`). Как и веб-сервер, CLI не создаёт хранилище автоматически. Отдельный скомпилированный бинарник CLI — в планах (issue #37).
