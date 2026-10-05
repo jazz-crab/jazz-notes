@@ -288,4 +288,4 @@ node dist/cli.js git resolve 00002.md --local
 
 ## Лицензия
 
-MIT
+GPL-3.0

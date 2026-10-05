@@ -289,4 +289,4 @@ Thanks to everyone who helped:
 
 ## License
 
-MIT
+GPL-3.0

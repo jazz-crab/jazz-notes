@@ -4,7 +4,7 @@
   "description": "Second Brain — note-taking with Markdown files",
   "main": "./out/main/index.js",
   "author": "jazz-crab <tvesnz@gmail.com>",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
